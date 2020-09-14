@@ -6,7 +6,7 @@ Postgres-async-driver is a non-blocking Java driver for PostgreSQL. The driver s
 
 ## Download
 
-Postgres-async-driver is available on [Maven Central](http://search.maven.org/#search|ga|1|g%3A%22com.github.alaisi.pgasync%22).
+Postgres-async-driver is available on [Maven Central](http://search.maven.org/#search|ga|1|g%3A%22com.github.alaisi.pgasync).
 
 ```xml
 <dependency>

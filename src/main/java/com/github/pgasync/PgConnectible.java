@@ -1,8 +1,8 @@
 package com.github.pgasync;
 
 import com.github.pgasync.conversion.DataConverter;
+import com.pgasync.ConnectibleBuilder;
 import com.pgasync.Connection;
-import com.pgasync.NettyConnectibleBuilder;
 import com.pgasync.Connectible;
 import com.pgasync.Row;
 import com.pgasync.Transaction;
@@ -27,7 +27,7 @@ public abstract class PgConnectible implements Connectible {
     protected final String database;
     protected final Charset encoding;
 
-    PgConnectible(NettyConnectibleBuilder.ConnectibleProperties properties, Function<Executor, ProtocolStream> toStream, Executor futuresExecutor) {
+    PgConnectible(ConnectibleBuilder.ConnectibleProperties properties, Function<Executor, ProtocolStream> toStream, Executor futuresExecutor) {
         this.username = properties.getUsername();
         this.password = properties.getPassword();
         this.database = properties.getDatabase();

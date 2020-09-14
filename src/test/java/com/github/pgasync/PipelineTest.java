@@ -98,7 +98,7 @@ public class PipelineTest {
     public void messageStreamEnsuresSequentialAccess() throws Exception {
         Connection connection = getConnection();
         try {
-            CompletableFuture.allOf((CompletableFuture<?>[]) IntStream.range(0, 10).mapToObj(i -> connection.completeQuery("select " + i + ", pg_sleep(" + 10 + ")")
+            CompletableFuture.allOf(IntStream.range(0, 10).mapToObj(i -> connection.completeQuery("select " + i + ", pg_sleep(" + 10 + ")")
                             .exceptionally(th -> {
                                 throw new IllegalStateException(new SqlException(th));
                             })

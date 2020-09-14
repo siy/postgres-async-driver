@@ -14,12 +14,12 @@
 
 package com.github.pgasync;
 
+import com.pgasync.ConnectibleBuilder;
 import com.pgasync.Connection;
 import com.pgasync.Listening;
 import com.pgasync.PreparedStatement;
 import com.pgasync.Row;
 import com.pgasync.SqlException;
-import com.pgasync.NettyConnectibleBuilder;
 import com.pgasync.ResultSet;
 import com.pgasync.Transaction;
 
@@ -254,7 +254,7 @@ public class PgConnectionPool extends PgConnectible {
     @GuardedBy("lock")
     private final Queue<PooledPgConnection> connections = new LinkedList<>();
 
-    public PgConnectionPool(NettyConnectibleBuilder.ConnectibleProperties properties, Function<Executor, ProtocolStream> addressToStream, Executor futuresExecutor) {
+    public PgConnectionPool(ConnectibleBuilder.ConnectibleProperties properties, Function<Executor, ProtocolStream> addressToStream, Executor futuresExecutor) {
         super(properties, addressToStream, futuresExecutor);
         this.maxConnections = properties.getMaxConnections();
         this.maxStatements = properties.getMaxStatements();

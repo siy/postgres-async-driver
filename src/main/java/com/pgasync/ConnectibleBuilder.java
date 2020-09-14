@@ -18,11 +18,7 @@ import com.github.pgasync.PgConnectionPool;
 import com.github.pgasync.PgDatabase;
 import com.github.pgasync.ProtocolStream;
 import com.github.pgasync.conversion.DataConverter;
-import com.github.pgasync.netty.NettyProtocolStream;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 
-import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,22 +32,11 @@ import java.util.concurrent.ForkJoinPool;
  * @author Antti Laisi
  * @author Marat Gainullin
  */
-public class NettyConnectibleBuilder {
+public abstract class ConnectibleBuilder {
 
-    private final ConnectibleProperties properties = new ConnectibleProperties();
-    // TODO: refactor when Netty will support more advanced threading model
-    //new NioEventLoopGroup(0/*Netty defaults will be used*/, futuresExecutor),
-    private static final EventLoopGroup group = new NioEventLoopGroup();
+    protected final ConnectibleProperties properties = new ConnectibleProperties();
 
-    private ProtocolStream newProtocolStream(Executor futuresExecutor) {
-        return new NettyProtocolStream(
-                group,
-                new InetSocketAddress(properties.getHostname(), properties.getPort()),
-                properties.getUseSsl(),
-                Charset.forName(properties.getEncoding()),
-                futuresExecutor
-        );
-    }
+    protected abstract ProtocolStream newProtocolStream(Executor futuresExecutor);
 
     /**
      * @return Pool ready for use
@@ -76,62 +61,62 @@ public class NettyConnectibleBuilder {
         return plain(ForkJoinPool.commonPool());
     }
 
-    public NettyConnectibleBuilder hostname(String hostname) {
+    public ConnectibleBuilder hostname(String hostname) {
         properties.hostname = hostname;
         return this;
     }
 
-    public NettyConnectibleBuilder port(int port) {
+    public ConnectibleBuilder port(int port) {
         properties.port = port;
         return this;
     }
 
-    public NettyConnectibleBuilder username(String username) {
+    public ConnectibleBuilder username(String username) {
         properties.username = username;
         return this;
     }
 
-    public NettyConnectibleBuilder password(String password) {
+    public ConnectibleBuilder password(String password) {
         properties.password = password;
         return this;
     }
 
-    public NettyConnectibleBuilder database(String database) {
+    public ConnectibleBuilder database(String database) {
         properties.database = database;
         return this;
     }
 
-    public NettyConnectibleBuilder maxConnections(int maxConnections) {
+    public ConnectibleBuilder maxConnections(int maxConnections) {
         properties.maxConnections = maxConnections;
         return this;
     }
 
-    public NettyConnectibleBuilder maxStatements(int maxStatements) {
+    public ConnectibleBuilder maxStatements(int maxStatements) {
         properties.maxStatements = maxStatements;
         return this;
     }
 
-    public NettyConnectibleBuilder converters(Converter<?>... converters) {
+    public ConnectibleBuilder converters(Converter<?>... converters) {
         Collections.addAll(properties.converters, converters);
         return this;
     }
 
-    public NettyConnectibleBuilder dataConverter(DataConverter dataConverter) {
+    public ConnectibleBuilder dataConverter(DataConverter dataConverter) {
         properties.dataConverter = dataConverter;
         return this;
     }
 
-    public NettyConnectibleBuilder ssl(boolean ssl) {
+    public ConnectibleBuilder ssl(boolean ssl) {
         properties.useSsl = ssl;
         return this;
     }
 
-    public NettyConnectibleBuilder validationQuery(String validationQuery) {
+    public ConnectibleBuilder validationQuery(String validationQuery) {
         properties.validationQuery = validationQuery;
         return this;
     }
 
-    public NettyConnectibleBuilder encoding(String value) {
+    public ConnectibleBuilder encoding(String value) {
         properties.encoding = value;
         return this;
     }

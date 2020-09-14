@@ -59,7 +59,7 @@ public class NettyMessageEncoder extends MessageToByteEncoder<Message> {
             new TerminateEncoder()
     ).stream().collect(Collectors.toMap(Encoder::getMessageType, encoder -> encoder));
 
-    private final ByteBuffer buffer = ByteBuffer.allocate(Integer.valueOf(System.getProperty("pg.io.buffer.length", "4096")));
+    private final ByteBuffer buffer = ByteBuffer.allocate(Integer.getInteger("pg.io.buffer.length", 4096));
 
     private final Charset encoding;
 

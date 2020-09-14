@@ -46,7 +46,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Netty messages stream to Postgres backend.
+ * Messages stream to Postgres backend.
  *
  * @author Marat Gainullin
  */

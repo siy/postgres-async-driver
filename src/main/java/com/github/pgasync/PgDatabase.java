@@ -1,7 +1,7 @@
 package com.github.pgasync;
 
+import com.pgasync.ConnectibleBuilder;
 import com.pgasync.Connection;
-import com.pgasync.NettyConnectibleBuilder;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -9,7 +9,7 @@ import java.util.function.Function;
 
 public class PgDatabase extends PgConnectible {
 
-    public PgDatabase(NettyConnectibleBuilder.ConnectibleProperties properties, Function<Executor, ProtocolStream> toStream, Executor futuresExecutor) {
+    public PgDatabase(ConnectibleBuilder.ConnectibleProperties properties, Function<Executor, ProtocolStream> toStream, Executor futuresExecutor) {
         super(properties, toStream, futuresExecutor);
     }
 
