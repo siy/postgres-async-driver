@@ -33,7 +33,6 @@ import com.github.pgasync.message.frontend.PasswordMessage;
 import com.github.pgasync.message.frontend.Query;
 import com.pgasync.SqlException;
 
-import java.net.SocketAddress;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -52,8 +51,6 @@ import java.util.logging.Logger;
  */
 public abstract class PgProtocolStream implements ProtocolStream {
 
-    protected final SocketAddress address;
-    protected final boolean useSsl;
     protected final Executor futuresExecutor;
     protected final Charset encoding;
 
@@ -68,9 +65,7 @@ public abstract class PgProtocolStream implements ProtocolStream {
     private Message readyForQueryPendingMessage;
     private Message lastSentMessage;
 
-    public PgProtocolStream(SocketAddress address, boolean useSsl, Charset encoding, Executor futuresExecutor) {
-        this.address = address;
-        this.useSsl = useSsl; // TODO: refactor into SSLConfig with trust parameters
+    public PgProtocolStream(Charset encoding, Executor futuresExecutor) {
         this.encoding = encoding;
         this.futuresExecutor = futuresExecutor;
     }

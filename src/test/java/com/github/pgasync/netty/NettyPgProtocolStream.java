@@ -45,8 +45,10 @@ import java.util.function.Function;
  *
  * @author Antti Laisi
  */
-public class NettyProtocolStream extends PgProtocolStream {
+public class NettyPgProtocolStream extends PgProtocolStream {
 
+    protected final boolean useSsl;
+    private final SocketAddress address;
     private final Bootstrap channelPipeline;
     private StartupMessage startupWith;
     private ChannelHandlerContext ctx;
@@ -57,8 +59,10 @@ public class NettyProtocolStream extends PgProtocolStream {
         }
     };
 
-    public NettyProtocolStream(EventLoopGroup group, SocketAddress address, boolean useSsl, Charset encoding, Executor futuresExecutor) {
-        super(address, useSsl, encoding, futuresExecutor);
+    public NettyPgProtocolStream(EventLoopGroup group, SocketAddress address, boolean useSsl, Charset encoding, Executor futuresExecutor) {
+        super(encoding, futuresExecutor);
+        this.address = address;
+        this.useSsl = useSsl; // TODO: refactor into SSLConfig with trust parameters
         this.channelPipeline = new Bootstrap()
                 .group(group)
                 .channel(NioSocketChannel.class)
@@ -156,7 +160,7 @@ public class NettyProtocolStream extends PgProtocolStream {
 
             @Override
             public void channelActive(ChannelHandlerContext context) {
-                NettyProtocolStream.this.ctx = context;
+                NettyPgProtocolStream.this.ctx = context;
                 if (useSsl) {
                     respondWithMessage(SSLRequest.INSTANCE);
                 } else {

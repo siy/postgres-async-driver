@@ -37,7 +37,7 @@ public class NettyConnectibleBuilder extends ConnectibleBuilder {
     private static final EventLoopGroup group = new NioEventLoopGroup();
 
     protected ProtocolStream newProtocolStream(Executor futuresExecutor) {
-        return new NettyProtocolStream(
+        return new NettyPgProtocolStream(
                 group,
                 new InetSocketAddress(properties.getHostname(), properties.getPort()),
                 properties.getUseSsl(),
