@@ -14,8 +14,6 @@
 
 package com.pgasync;
 
-import com.github.pgasync.PgConnectionPool;
-import com.github.pgasync.PgDatabase;
 import com.github.pgasync.ProtocolStream;
 import com.github.pgasync.conversion.DataConverter;
 
@@ -41,9 +39,7 @@ public abstract class ConnectibleBuilder {
     /**
      * @return Pool ready for use
      */
-    public Connectible pool(Executor futuresExecutor) {
-        return new PgConnectionPool(properties, this::newProtocolStream, futuresExecutor);
-    }
+    public abstract Connectible pool(Executor futuresExecutor);
 
     public Connectible pool() {
         return pool(ForkJoinPool.commonPool());
@@ -53,9 +49,7 @@ public abstract class ConnectibleBuilder {
     /**
      * @return Pool ready for use
      */
-    public Connectible plain(Executor futuresExecutor) {
-        return new PgDatabase(properties, this::newProtocolStream, futuresExecutor);
-    }
+    public abstract Connectible plain(Executor futuresExecutor);
 
     public Connectible plain() {
         return plain(ForkJoinPool.commonPool());

@@ -6,17 +6,19 @@ import com.pgasync.Connection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class PgDatabase extends PgConnectible {
 
-    public PgDatabase(ConnectibleBuilder.ConnectibleProperties properties, Function<Executor, ProtocolStream> toStream, Executor futuresExecutor) {
-        super(properties, toStream, futuresExecutor);
+    public PgDatabase(ConnectibleBuilder.ConnectibleProperties properties, Supplier<CompletableFuture<ProtocolStream>> obtainStream, Executor futuresExecutor) {
+        super(properties, obtainStream, futuresExecutor);
     }
 
     @Override
     public CompletableFuture<Connection> getConnection() {
-        return new PgConnection(toStream.apply(futuresExecutor), dataConverter, encoding)
-                .connect(username, password, database)
+        return obtainStream.get()
+                .thenApply(stream -> new PgConnection(stream, dataConverter, encoding).connect(username, password, database))
+                .thenCompose(Function.identity())
                 .thenApply(connection -> {
                     if (validationQuery != null && !validationQuery.isBlank()) {
                         return connection.completeScript(validationQuery)

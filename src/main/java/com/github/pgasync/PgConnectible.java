@@ -14,6 +14,7 @@ import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public abstract class PgConnectible implements Connectible {
 
@@ -21,20 +22,20 @@ public abstract class PgConnectible implements Connectible {
     final String username;
     final DataConverter dataConverter;
     final Executor futuresExecutor;
-    final Function<Executor, ProtocolStream> toStream;
+     final Supplier<CompletableFuture<ProtocolStream>> obtainStream;
 
     protected final String password;
     protected final String database;
     protected final Charset encoding;
 
-    PgConnectible(ConnectibleBuilder.ConnectibleProperties properties, Function<Executor, ProtocolStream> toStream, Executor futuresExecutor) {
+    PgConnectible(ConnectibleBuilder.ConnectibleProperties properties, Supplier<CompletableFuture<ProtocolStream>> obtainStream, Executor futuresExecutor) {
         this.username = properties.getUsername();
         this.password = properties.getPassword();
         this.database = properties.getDatabase();
         this.dataConverter = properties.getDataConverter();
         this.validationQuery = properties.getValidationQuery();
         this.encoding = Charset.forName(properties.getEncoding());
-        this.toStream = toStream;
+        this.obtainStream = obtainStream;
         this.futuresExecutor = futuresExecutor;
     }
 

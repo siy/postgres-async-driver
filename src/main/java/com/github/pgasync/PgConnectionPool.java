@@ -37,6 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -254,8 +255,8 @@ public class PgConnectionPool extends PgConnectible {
     @GuardedBy("lock")
     private final Queue<PooledPgConnection> connections = new LinkedList<>();
 
-    public PgConnectionPool(ConnectibleBuilder.ConnectibleProperties properties, Function<Executor, ProtocolStream> addressToStream, Executor futuresExecutor) {
-        super(properties, addressToStream, futuresExecutor);
+    public PgConnectionPool(ConnectibleBuilder.ConnectibleProperties properties, Supplier<CompletableFuture<ProtocolStream>> obtainStream, Executor futuresExecutor) {
+        super(properties, obtainStream, futuresExecutor);
         this.maxConnections = properties.getMaxConnections();
         this.maxStatements = properties.getMaxStatements();
     }
@@ -284,7 +285,6 @@ public class PgConnectionPool extends PgConnectible {
     @Override
     public CompletableFuture<Connection> getConnection() {
         CompletableFuture<Connection> uponAvailable = new CompletableFuture<>();
-
         lock.lock();
         try {
             if (closed) {
@@ -295,8 +295,10 @@ public class PgConnectionPool extends PgConnectible {
                     uponAvailable.completeAsync(() -> connection, futuresExecutor);
                 } else {
                     if (tryIncreaseSize()) {
-                        new PooledPgConnection(new PgConnection(toStream.apply(futuresExecutor), dataConverter, encoding))
-                                .connect(username, password, database)
+                        obtainStream.get()
+                                .thenApply(stream -> new PooledPgConnection(new PgConnection(stream, dataConverter, encoding))
+                                        .connect(username, password, database))
+                                .thenCompose(Function.identity())
                                 .thenApply(pooledConnection -> {
                                     if (validationQuery != null && !validationQuery.isBlank()) {
                                         return pooledConnection.completeScript(validationQuery)

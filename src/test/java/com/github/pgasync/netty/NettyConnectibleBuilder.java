@@ -14,6 +14,8 @@
 
 package com.github.pgasync.netty;
 
+import com.github.pgasync.PgConnectionPool;
+import com.github.pgasync.PgDatabase;
 import com.github.pgasync.ProtocolStream;
 import com.pgasync.Connectible;
 import com.pgasync.ConnectibleBuilder;
@@ -22,6 +24,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 /**
@@ -45,4 +48,13 @@ public class NettyConnectibleBuilder extends ConnectibleBuilder {
                 futuresExecutor
         );
     }
+
+    public Connectible pool(Executor futuresExecutor) {
+        return new PgConnectionPool(properties, () -> CompletableFuture.completedFuture(newProtocolStream(futuresExecutor)), futuresExecutor);
+    }
+
+    public Connectible plain(Executor futuresExecutor) {
+        return new PgDatabase(properties, () -> CompletableFuture.completedFuture(newProtocolStream(futuresExecutor)), futuresExecutor);
+    }
+
 }
