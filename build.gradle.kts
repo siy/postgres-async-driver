@@ -21,4 +21,4 @@ tasks.withType<JavaCompile> {
 }
 
 group = "com.github.alaisi.pgasync"
-version = "0-10"
+version = "0.10"

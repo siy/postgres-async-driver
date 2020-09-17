@@ -39,22 +39,22 @@ public class NettyConnectibleBuilder extends ConnectibleBuilder {
     //new NioEventLoopGroup(0/*Netty defaults will be used*/, futuresExecutor),
     private static final EventLoopGroup group = new NioEventLoopGroup();
 
-    protected ProtocolStream newProtocolStream(Executor futuresExecutor) {
-        return new NettyPgProtocolStream(
+    private CompletableFuture<ProtocolStream> obtainStream(Executor futuresExecutor) {
+        return CompletableFuture.completedFuture(new NettyPgProtocolStream(
                 group,
                 new InetSocketAddress(properties.getHostname(), properties.getPort()),
                 properties.getUseSsl(),
                 Charset.forName(properties.getEncoding()),
                 futuresExecutor
-        );
+        ));
     }
 
     public Connectible pool(Executor futuresExecutor) {
-        return new PgConnectionPool(properties, () -> CompletableFuture.completedFuture(newProtocolStream(futuresExecutor)), futuresExecutor);
+        return new PgConnectionPool(properties, () -> obtainStream(futuresExecutor), futuresExecutor);
     }
 
     public Connectible plain(Executor futuresExecutor) {
-        return new PgDatabase(properties, () -> CompletableFuture.completedFuture(newProtocolStream(futuresExecutor)), futuresExecutor);
+        return new PgDatabase(properties, () -> obtainStream(futuresExecutor), futuresExecutor);
     }
 
 }

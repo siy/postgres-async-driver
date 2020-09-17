@@ -14,7 +14,6 @@
 
 package com.pgasync;
 
-import com.github.pgasync.ProtocolStream;
 import com.github.pgasync.conversion.DataConverter;
 
 import java.nio.charset.Charset;
@@ -33,8 +32,6 @@ import java.util.concurrent.ForkJoinPool;
 public abstract class ConnectibleBuilder {
 
     protected final ConnectibleProperties properties = new ConnectibleProperties();
-
-    protected abstract ProtocolStream newProtocolStream(Executor futuresExecutor);
 
     /**
      * @return Pool ready for use
