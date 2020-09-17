@@ -45,7 +45,6 @@ public abstract class ConnectibleBuilder {
         return pool(ForkJoinPool.commonPool());
     }
 
-
     /**
      * @return Pool ready for use
      */
