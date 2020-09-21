@@ -25,6 +25,7 @@ import com.github.pgasync.message.backend.NoticeResponse;
 import com.github.pgasync.message.backend.NotificationResponse;
 import com.github.pgasync.message.backend.ReadyForQuery;
 import com.github.pgasync.message.backend.RowDescription;
+import com.github.pgasync.message.backend.UnknownMessage;
 import com.github.pgasync.message.frontend.Bind;
 import com.github.pgasync.message.frontend.Describe;
 import com.github.pgasync.message.frontend.Execute;
@@ -203,6 +204,8 @@ public abstract class PgProtocolStream implements ProtocolStream {
                 consumeOnResponse().completeAsync(() -> response, futuresExecutor);
             }
             readyForQueryPendingMessage = null;
+        } else if (message instanceof UnknownMessage) {
+            Logger.getLogger(PgProtocolStream.class.getName()).log(Level.INFO, message.toString());
         } else {
             consumeOnResponse().completeAsync(() -> message, futuresExecutor);
         }

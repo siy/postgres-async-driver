@@ -27,6 +27,7 @@ import com.github.pgasync.io.backend.NotificationResponseDecoder;
 import com.github.pgasync.io.backend.ParseCompleteDecoder;
 import com.github.pgasync.io.backend.ReadyForQueryDecoder;
 import com.github.pgasync.io.backend.RowDescriptionDecoder;
+import com.github.pgasync.message.backend.UnknownMessage;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
@@ -82,6 +83,7 @@ class NettyMessageDecoder extends ByteToMessageDecoder {
                     out.add(decoder.read(buffer, encoding));
                     in.skipBytes(buffer.position());
                 } else {
+                    out.add(new UnknownMessage(id));
                     in.skipBytes(length - 4);
                 }
             } catch (Throwable t) {
