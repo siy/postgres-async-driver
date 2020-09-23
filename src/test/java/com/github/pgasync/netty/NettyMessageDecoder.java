@@ -16,6 +16,7 @@ package com.github.pgasync.netty;
 
 import com.github.pgasync.io.Decoder;
 import com.github.pgasync.io.backend.AuthenticationDecoder;
+import com.github.pgasync.io.backend.BackendKeyDataDecoder;
 import com.github.pgasync.io.backend.BindCompleteDecoder;
 import com.github.pgasync.io.backend.CloseCompleteDecoder;
 import com.github.pgasync.io.backend.CommandCompleteDecoder;
@@ -24,6 +25,7 @@ import com.github.pgasync.io.backend.ErrorResponseDecoder;
 import com.github.pgasync.io.backend.NoDataDecoder;
 import com.github.pgasync.io.backend.NoticeResponseDecoder;
 import com.github.pgasync.io.backend.NotificationResponseDecoder;
+import com.github.pgasync.io.backend.ParameterStatusDecoder;
 import com.github.pgasync.io.backend.ParseCompleteDecoder;
 import com.github.pgasync.io.backend.ReadyForQueryDecoder;
 import com.github.pgasync.io.backend.RowDescriptionDecoder;
@@ -49,6 +51,8 @@ class NettyMessageDecoder extends ByteToMessageDecoder {
 
     private static final Map<Byte, Decoder<?>> DECODERS = Set.of(
             new ErrorResponseDecoder(),
+            new BackendKeyDataDecoder(),
+            new ParameterStatusDecoder(),
             new AuthenticationDecoder(),
             new ReadyForQueryDecoder(),
             new RowDescriptionDecoder(),

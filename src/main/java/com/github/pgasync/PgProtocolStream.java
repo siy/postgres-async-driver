@@ -18,11 +18,13 @@ import com.github.pgasync.message.ExtendedQueryMessage;
 import com.github.pgasync.message.Message;
 import com.github.pgasync.message.backend.Authentication;
 import com.github.pgasync.message.backend.BIndicators;
+import com.github.pgasync.message.backend.BackendKeyData;
 import com.github.pgasync.message.backend.CommandComplete;
 import com.github.pgasync.message.backend.DataRow;
 import com.github.pgasync.message.backend.ErrorResponse;
 import com.github.pgasync.message.backend.NoticeResponse;
 import com.github.pgasync.message.backend.NotificationResponse;
+import com.github.pgasync.message.backend.ParameterStatus;
 import com.github.pgasync.message.backend.ReadyForQuery;
 import com.github.pgasync.message.backend.RowDescription;
 import com.github.pgasync.message.backend.UnknownMessage;
@@ -158,8 +160,6 @@ public abstract class PgProtocolStream implements ProtocolStream {
     protected void respondWithMessage(Message message) {
         if (message instanceof NotificationResponse) {
             publish((NotificationResponse) message);
-        } else if (message instanceof NoticeResponse) {
-            Logger.getLogger(PgProtocolStream.class.getName()).log(Level.WARNING, message.toString());
         } else if (message == BIndicators.BIND_COMPLETE) {
             // op op since bulk message sequence
         } else if (message == BIndicators.PARSE_COMPLETE || message == BIndicators.CLOSE_COMPLETE) {
@@ -204,6 +204,12 @@ public abstract class PgProtocolStream implements ProtocolStream {
                 consumeOnResponse().completeAsync(() -> response, futuresExecutor);
             }
             readyForQueryPendingMessage = null;
+        } else if (message instanceof ParameterStatus) {
+            Logger.getLogger(PgProtocolStream.class.getName()).log(Level.INFO, message.toString());
+        } else if (message instanceof BackendKeyData) {
+            Logger.getLogger(PgProtocolStream.class.getName()).log(Level.INFO, message.toString());
+        } else if (message instanceof NoticeResponse) {
+            Logger.getLogger(PgProtocolStream.class.getName()).log(Level.WARNING, message.toString());
         } else if (message instanceof UnknownMessage) {
             Logger.getLogger(PgProtocolStream.class.getName()).log(Level.INFO, message.toString());
         } else {
