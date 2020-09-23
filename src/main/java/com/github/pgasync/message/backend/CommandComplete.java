@@ -17,19 +17,20 @@ package com.github.pgasync.message.backend;
 import com.github.pgasync.message.Message;
 
 /**
- * @author  Antti Laisi
+ * @author Antti Laisi
  */
 public class CommandComplete implements Message {
 
+    private final String tag;
     private final int affectedRows;
 
-    public CommandComplete(String tag) {
-        if (tag.contains("INSERT") || tag.contains("UPDATE") || tag.contains("DELETE")) {
-            String[] parts = tag.split(" ");
-            affectedRows = Integer.parseInt(parts[parts.length - 1]);
-        } else {
-            affectedRows = 0;
-        }
+    public CommandComplete(String tag, int affectedRows) {
+        this.tag = tag;
+        this.affectedRows = affectedRows;
+    }
+
+    public String getTag() {
+        return tag;
     }
 
     public int getAffectedRows() {
@@ -38,6 +39,9 @@ public class CommandComplete implements Message {
 
     @Override
     public String toString() {
-        return String.format("CommandComplete(affectedRows=%d)", affectedRows);
+        return "CommandComplete(" +
+                "tag='" + tag + '\'' +
+                ", affectedRows=" + affectedRows +
+                ')';
     }
 }
