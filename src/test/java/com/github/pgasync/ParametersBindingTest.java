@@ -23,10 +23,14 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.*;
@@ -47,7 +51,7 @@ public class ParametersBindingTest {
         dbr.query("CREATE TABLE PS_TEST("
                 + "LONG INT8,INT INT4,SHORT INT2, BYTE INT2,"
                 + "CHAR CHAR(1), STRING VARCHAR(255), CLOB TEXT,"
-                + "TIME TIME, DATE DATE, TS TIMESTAMP,"
+                + "TIME TIME, DATE DATE, TS TIMESTAMP, TSWTZ TIMESTAMP,"
                 + "BYTEA BYTEA, BOOLEAN BOOLEAN)");
     }
 
@@ -124,10 +128,24 @@ public class ParametersBindingTest {
     }
 
     @Test
+    public void shouldBindInstant() {
+        Instant inst = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+        dbr.query("INSERT INTO PS_TEST(TSWTZ) VALUES ($1)", singletonList(inst));
+        assertEquals(inst, dbr.query("SELECT TSWTZ FROM PS_TEST WHERE TSWTZ = $1", List.of(inst)).at(0).getInstant(0));
+    }
+
+    @Test
     public void shouldBindDate() {
-        Date date = Date.valueOf(LocalDate.parse("2014-01-19"));
-        dbr.query("INSERT INTO PS_TEST(DATE) VALUES ($1)", List.of(date));
-        assertEquals(date, dbr.query("SELECT DATE FROM PS_TEST WHERE DATE = $1", List.of(date)).at(0).getDate(0));
+        Date date = new Date(System.currentTimeMillis());
+        dbr.query("INSERT INTO PS_TEST(TS) VALUES ($1)", List.of(date));
+        assertEquals(date, dbr.query("SELECT TS FROM PS_TEST WHERE TS = $1", List.of(date)).at(0).getDate(0));
+    }
+
+    @Test
+    public void shouldBindLocalDate() {
+        LocalDate localDate = LocalDate.parse("2014-01-19");
+        dbr.query("INSERT INTO PS_TEST(DATE) VALUES ($1)", List.of(localDate));
+        assertEquals(localDate, dbr.query("SELECT DATE FROM PS_TEST WHERE DATE = $1", List.of(localDate)).at(0).getLocalDate(0));
     }
 
     @Test

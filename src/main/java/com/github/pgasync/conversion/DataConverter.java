@@ -10,6 +10,7 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
@@ -74,6 +75,10 @@ public class DataConverter {
         return value == null ? null : NumericConversions.toDouble(oid, new String(value, encoding));
     }
 
+    public LocalDate toLocalDate(Oid oid, byte[] value) {
+        return value == null ? null : TemporalConversions.toLocalDate(oid, new String(value, encoding));
+    }
+
     public Date toDate(Oid oid, byte[] value) {
         return value == null ? null : TemporalConversions.toDate(oid, new String(value, encoding));
     }
@@ -84,6 +89,10 @@ public class DataConverter {
 
     public Timestamp toTimestamp(Oid oid, byte[] value) {
         return value == null ? null : TemporalConversions.toTimestamp(oid, new String(value, encoding));
+    }
+
+    public Instant toInstant(Oid oid, byte[] value) {
+        return value == null ? null : TemporalConversions.toInstant(oid, new String(value, encoding));
     }
 
     public byte[] toBytes(Oid oid, byte[] value) {
@@ -127,7 +136,7 @@ public class DataConverter {
                 return ArrayConversions.toArray(arrayType, oid, svalue, TemporalConversions::toTime);
 
             case DATE_ARRAY:
-                return ArrayConversions.toArray(arrayType, oid, svalue, TemporalConversions::toDate);
+                return ArrayConversions.toArray(arrayType, oid, svalue, TemporalConversions::toLocalDate);
 
             case BOOL_ARRAY:
                 return ArrayConversions.toArray(arrayType, oid, svalue, BooleanConversions::toBoolean);
@@ -160,8 +169,14 @@ public class DataConverter {
         if (o instanceof Timestamp) {
             return TemporalConversions.fromTimestamp((Timestamp) o);
         }
+        if (o instanceof LocalDate) {
+            return TemporalConversions.fromLocalDate((LocalDate) o);
+        }
         if (o instanceof Date) {
             return TemporalConversions.fromDate((Date) o);
+        }
+        if (o instanceof Instant) {
+            return TemporalConversions.fromInstant((Instant) o);
         }
         if (o instanceof byte[]) {
             return BlobConversions.fromBytes((byte[]) o);
@@ -224,7 +239,7 @@ public class DataConverter {
             case BYTEA:
                 return toBytes(oid, value);
             case DATE:
-                return toDate(oid, value);
+                return toLocalDate(oid, value);
             case TIMETZ: // fallthrough
             case TIME:
                 return toTime(oid, value);
@@ -313,9 +328,11 @@ public class DataConverter {
             } else if (params[i] instanceof Instant) {
                 types[i] = Oid.TIMESTAMP;
             } else if (params[i] instanceof OffsetDateTime) {
-                types[i] = Oid.TIMESTAMP;
-            } else if (params[i] instanceof LocalDateTime) {
                 types[i] = Oid.TIMESTAMPTZ;
+            } else if (params[i] instanceof LocalDateTime) {
+                types[i] = Oid.TIMESTAMP;
+            } else if (params[i] instanceof LocalDate) {
+                types[i] = Oid.DATE;
             } else if (params[i] instanceof Time) {
                 types[i] = Oid.TIME;
             } else if (params[i] instanceof OffsetTime) {

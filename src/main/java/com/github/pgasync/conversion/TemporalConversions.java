@@ -28,26 +28,26 @@ class TemporalConversions {
             .append(ISO_LOCAL_TIME)
             .toFormatter();
 
-    private static final DateTimeFormatter TIMESTAMPZ_FORMAT = new DateTimeFormatterBuilder()
+    private static final DateTimeFormatter TIMESTAMPTZ_FORMAT = new DateTimeFormatterBuilder()
             .parseCaseInsensitive()
             .append(ISO_LOCAL_DATE)
             .appendLiteral(' ')
             .append(ISO_LOCAL_TIME)
-            .appendOffset("+HH:mm", "")
+            .appendOffset("+HH:mm", "+00")
             .toFormatter();
 
     private static final DateTimeFormatter TIMEZ_FORMAT = new DateTimeFormatterBuilder()
             .parseCaseInsensitive()
             .append(ISO_LOCAL_TIME)
-            .appendOffset("+HH:mm", "")
+            .appendOffset("+HH:mm", "+00")
             .toFormatter();
 
-    static Date toDate(Oid oid, String value) {
+    static LocalDate toLocalDate(Oid oid, String value) {
         switch (oid) {
             case UNSPECIFIED: // fallthrough
             case DATE:
                 try {
-                    return Date.valueOf(LocalDate.parse(value, ISO_LOCAL_DATE));
+                    return LocalDate.parse(value, ISO_LOCAL_DATE);
                 } catch (DateTimeParseException e) {
                     throw new SqlException("Invalid date: " + value);
                 }
@@ -77,9 +77,9 @@ class TemporalConversions {
             switch (oid) {
                 case UNSPECIFIED: // fallthrough
                 case TIMESTAMP:
-                    return Timestamp.valueOf(LocalDateTime.parse(value, TIMESTAMP_FORMAT));
+                    return Timestamp.from(LocalDateTime.parse(value, TIMESTAMP_FORMAT).toInstant(ZoneOffset.UTC));
                 case TIMESTAMPTZ:
-                    return Timestamp.valueOf(OffsetDateTime.parse(value, TIMESTAMPZ_FORMAT).toLocalDateTime());
+                    return Timestamp.from(OffsetDateTime.parse(value, TIMESTAMPTZ_FORMAT).toInstant());
                 default:
                     throw new SqlException("Unsupported conversion " + oid.name() + " -> Time");
             }
@@ -88,15 +88,55 @@ class TemporalConversions {
         }
     }
 
+    static Date toDate(Oid oid, String value) {
+        try {
+            switch (oid) {
+                case UNSPECIFIED: // fallthrough
+                case TIMESTAMP:
+                    return new Date(LocalDateTime.parse(value, TIMESTAMP_FORMAT).toInstant(ZoneOffset.UTC).toEpochMilli());
+                case TIMESTAMPTZ:
+                    return new Date(OffsetDateTime.parse(value, TIMESTAMPTZ_FORMAT).toInstant().toEpochMilli());
+                default:
+                    throw new SqlException("Unsupported conversion " + oid.name() + " -> Time");
+            }
+        } catch (DateTimeParseException e) {
+            throw new SqlException("Invalid time: " + value);
+        }
+    }
+
+    static Instant toInstant(Oid oid, String value) {
+        try {
+            switch (oid) {
+                case UNSPECIFIED: // fallthrough
+                case TIMESTAMP:
+                    return LocalDateTime.parse(value, TIMESTAMP_FORMAT).toInstant(ZoneOffset.UTC);
+                case TIMESTAMPTZ:
+                    return OffsetDateTime.parse(value, TIMESTAMPTZ_FORMAT).toInstant();
+                default:
+                    throw new SqlException("Unsupported conversion " + oid.name() + " -> Time");
+            }
+        } catch (DateTimeParseException e) {
+            throw new SqlException("Invalid time: " + value);
+        }
+    }
+
+    static String fromLocalDate(LocalDate localDate) {
+        return ISO_LOCAL_DATE.format(localDate);
+    }
+
     static String fromTime(Time time) {
         return ISO_LOCAL_TIME.format(time.toLocalTime());
     }
 
+    static String fromInstant(Instant instant) {
+        return TIMESTAMP_FORMAT.format(OffsetDateTime.ofInstant(instant, ZoneOffset.UTC));
+    }
+
     static String fromDate(Date date) {
-        return ISO_LOCAL_DATE.format(date.toLocalDate());
+        return fromInstant(Instant.ofEpochMilli(date.getTime()));
     }
 
     static String fromTimestamp(Timestamp ts) {
-        return TIMESTAMP_FORMAT.format(ts.toLocalDateTime());
+        return fromInstant(Instant.ofEpochMilli(ts.getTime()));
     }
 }

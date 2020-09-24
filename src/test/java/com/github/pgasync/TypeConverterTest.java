@@ -158,14 +158,14 @@ public class TypeConverterTest {
 
     @Test
     public void shouldConvertDateToDate() {
-        assertEquals(Date.valueOf(LocalDate.parse("2014-01-31")),
-                dbr.query("select '2014-01-31'::DATE").at(0).getDate(0));
+        assertEquals(LocalDate.parse("2014-01-31"),
+                dbr.query("select '2014-01-31'::DATE").at(0).getLocalDate(0));
     }
 
     @Test
     public void shouldConvertDateToDateWithName() {
-        assertEquals(Date.valueOf(LocalDate.parse("2014-02-21")), dbr.query("select '2014-02-21'::DATE as D").at(0)
-                .getDate("d"));
+        assertEquals(LocalDate.parse("2014-02-21"), dbr.query("select '2014-02-21'::DATE as D").at(0)
+                .getLocalDate("d"));
     }
 
     @Test
@@ -182,19 +182,19 @@ public class TypeConverterTest {
 
     @Test
     public void shouldConvertTimestampToTimestamp() {
-        assertEquals(Timestamp.valueOf(LocalDateTime.parse("2014-02-21T23:59:59.999")),
+        assertEquals(Timestamp.from(LocalDateTime.parse("2014-02-21T23:59:59.999").toInstant(ZoneOffset.UTC)),
                 dbr.query("select '2014-02-21 23:59:59.999'::TIMESTAMP as ts").at(0).getTimestamp("ts"));
     }
 
     @Test
     public void shouldConvertTimestampWithShortMillisToTimestamp() {
-        assertEquals(Timestamp.valueOf(LocalDateTime.parse("2014-02-21T23:59:59.990")),
+        assertEquals(Timestamp.from(LocalDateTime.parse("2014-02-21T23:59:59.990").toInstant(ZoneOffset.UTC)),
                 dbr.query("select '2014-02-21 23:59:59.99'::TIMESTAMP as ts").at(0).getTimestamp("ts"));
     }
 
     @Test
     public void shouldConvertTimestampWithNoMillisToTimestamp() {
-        assertEquals(Timestamp.valueOf(LocalDateTime.parse("2014-02-21T23:59:59")),
+        assertEquals(Timestamp.from(LocalDateTime.parse("2014-02-21T23:59:59").toInstant(ZoneOffset.UTC)),
                 dbr.query("select '2014-02-21 23:59:59'::TIMESTAMP as ts").at(0).getTimestamp("ts"));
     }
 
@@ -206,8 +206,8 @@ public class TypeConverterTest {
 
     @Test
     public void shouldConvertZonedTimestampWithNanosToTimestamp() {
-        assertEquals(Timestamp.valueOf("2014-02-21 23:59:59.000999"),
-                dbr.query("select '2014-02-21 23:59:59.000999'::TIMESTAMPTZ as ts").at(0).getTimestamp("ts"));
+        assertEquals(Timestamp.from(Instant.parse("2014-02-21T23:59:59.000999Z")),
+                dbr.query("select '2014-02-21 23:59:59.000999+00'::TIMESTAMPTZ as ts").at(0).getTimestamp("ts"));
     }
 
     @Test

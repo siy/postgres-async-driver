@@ -24,6 +24,8 @@ import java.math.BigInteger;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Map;
 
 /**
@@ -145,14 +147,14 @@ public class PgRow implements Row {
     }
 
     @Override
-    public Date getDate(int index) {
-        return dataConverter.toDate(columns[index].getType(), data.getValue(index));
+    public LocalDate getLocalDate(int index) {
+        return dataConverter.toLocalDate(columns[index].getType(), data.getValue(index));
     }
 
     @Override
-    public Date getDate(String column) {
+    public LocalDate getLocalDate(String column) {
         PgColumn pgColumn = getColumn(column);
-        return getDate(pgColumn.at());
+        return getLocalDate(pgColumn.at());
     }
 
     @Override
@@ -167,6 +169,17 @@ public class PgRow implements Row {
     }
 
     @Override
+    public Date getDate(int index) {
+        return dataConverter.toDate(columns[index].getType(), data.getValue(index));
+    }
+
+    @Override
+    public Date getDate(String column) {
+        PgColumn pgColumn = getColumn(column);
+        return getDate(pgColumn.at());
+    }
+
+    @Override
     public Timestamp getTimestamp(int index) {
         return dataConverter.toTimestamp(columns[index].getType(), data.getValue(index));
     }
@@ -175,6 +188,17 @@ public class PgRow implements Row {
     public Timestamp getTimestamp(String column) {
         PgColumn pgColumn = getColumn(column);
         return getTimestamp(pgColumn.at());
+    }
+
+    @Override
+    public Instant getInstant(int index) {
+        return dataConverter.toInstant(columns[index].getType(), data.getValue(index));
+    }
+
+    @Override
+    public Instant getInstant(String column) {
+        PgColumn pgColumn = getColumn(column);
+        return getInstant(pgColumn.at());
     }
 
     @Override

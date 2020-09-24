@@ -19,6 +19,8 @@ import java.math.BigInteger;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDate;
 
 /**
  * Row in a query result set. A row consist of 0-n columns of a single type.
@@ -64,17 +66,25 @@ public interface Row {
 
     Double getDouble(String column);
 
-    Date getDate(int index);
+    LocalDate getLocalDate(int index);
 
-    Date getDate(String column);
+    LocalDate getLocalDate(String column);
 
     Time getTime(int index);
 
     Time getTime(String column);
 
+    Date getDate(int index);
+
+    Date getDate(String column);
+
     Timestamp getTimestamp(int index);
 
     Timestamp getTimestamp(String column);
+
+    Instant getInstant(int index);
+
+    Instant getInstant(String column);
 
     byte[] getBytes(int index);
 

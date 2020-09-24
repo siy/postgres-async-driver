@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -121,8 +122,8 @@ public class ArrayConversionsTest {
 
         assertArrayEquals(
                 new Timestamp[]{
-                        Timestamp.valueOf(LocalDateTime.parse("1999-05-16T00:00:00.591")),
-                        Timestamp.valueOf(LocalDateTime.parse("1970-02-04T01:02:33.01")),
+                        Timestamp.from(LocalDateTime.parse("1999-05-16T00:00:00.591").toInstant(ZoneOffset.UTC)),
+                        Timestamp.from(LocalDateTime.parse("1970-02-04T01:02:33.01").toInstant(ZoneOffset.UTC)),
                         null
                 },
                 getRow().getArray("timestampa", Timestamp[].class));
