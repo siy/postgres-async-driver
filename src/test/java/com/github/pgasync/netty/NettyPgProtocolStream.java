@@ -55,7 +55,7 @@ public class NettyPgProtocolStream extends PgProtocolStream {
 
     private final GenericFutureListener<Future<? super Object>> outboundErrorListener = written -> {
         if (!written.isSuccess()) {
-            respondWithException(written.cause());
+            gotException(written.cause());
         }
     };
 
@@ -162,23 +162,23 @@ public class NettyPgProtocolStream extends PgProtocolStream {
             public void channelActive(ChannelHandlerContext context) {
                 NettyPgProtocolStream.this.ctx = context;
                 if (useSsl) {
-                    respondWithMessage(SSLRequest.INSTANCE);
+                    gotMessage(SSLRequest.INSTANCE);
                 } else {
-                    respondWithMessage(startupWith);
+                    gotMessage(startupWith);
                 }
             }
 
             @Override
             public void userEventTriggered(ChannelHandlerContext context, Object evt) {
                 if (evt instanceof SslHandshakeCompletionEvent && ((SslHandshakeCompletionEvent) evt).isSuccess()) {
-                    respondWithMessage(SSLHandshake.INSTANCE);
+                    gotMessage(SSLHandshake.INSTANCE);
                 }
             }
 
             @Override
             public void channelRead(ChannelHandlerContext context, Object message) {
                 if (message instanceof Message) {
-                    respondWithMessage((Message) message);
+                    gotMessage((Message) message);
                 }
             }
 
@@ -189,7 +189,7 @@ public class NettyPgProtocolStream extends PgProtocolStream {
 
             @Override
             public void exceptionCaught(ChannelHandlerContext context, Throwable cause) {
-                respondWithException(cause);
+                gotException(cause);
             }
         };
     }

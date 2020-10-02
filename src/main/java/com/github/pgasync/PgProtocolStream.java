@@ -145,7 +145,7 @@ public abstract class PgProtocolStream implements ProtocolStream {
         });
     }
 
-    protected void respondWithException(Throwable th) {
+    protected void gotException(Throwable th) {
         onColumns = null;
         onRow = null;
         onAffected = null;
@@ -157,7 +157,7 @@ public abstract class PgProtocolStream implements ProtocolStream {
         }
     }
 
-    protected void respondWithMessage(Message message) {
+    protected void gotMessage(Message message) {
         if (message instanceof NotificationResponse) {
             publish((NotificationResponse) message);
         } else if (message == BIndicators.BIND_COMPLETE) {
@@ -174,7 +174,7 @@ public abstract class PgProtocolStream implements ProtocolStream {
             if (seenReadyForQuery) {
                 readyForQueryPendingMessage = message;
             } else {
-                respondWithException(toSqlException((ErrorResponse) message));
+                gotException(toSqlException((ErrorResponse) message));
             }
         } else if (message instanceof CommandComplete) {
             if (isSimpleQueryInProgress()) {
@@ -195,7 +195,7 @@ public abstract class PgProtocolStream implements ProtocolStream {
         } else if (message == ReadyForQuery.INSTANCE) {
             seenReadyForQuery = true;
             if (readyForQueryPendingMessage instanceof ErrorResponse) {
-                respondWithException(toSqlException((ErrorResponse) readyForQueryPendingMessage));
+                gotException(toSqlException((ErrorResponse) readyForQueryPendingMessage));
             } else {
                 onColumns = null;
                 onRow = null;
@@ -229,7 +229,7 @@ public abstract class PgProtocolStream implements ProtocolStream {
                 try {
                     requestAction.run();
                 } catch (Throwable th) {
-                    respondWithException(th);
+                    gotException(th);
                 }
             } else {
                 futuresExecutor.execute(() -> uponResponse.completeExceptionally(new IllegalStateException("Postgres messages stream simultaneous use detected")));
