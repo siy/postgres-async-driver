@@ -205,13 +205,13 @@ public abstract class PgProtocolStream implements ProtocolStream {
             }
             readyForQueryPendingMessage = null;
         } else if (message instanceof ParameterStatus) {
-            Logger.getLogger(PgProtocolStream.class.getName()).log(Level.INFO, message.toString());
+            Logger.getLogger(PgProtocolStream.class.getName()).log(Level.FINE, message.toString());
         } else if (message instanceof BackendKeyData) {
-            Logger.getLogger(PgProtocolStream.class.getName()).log(Level.INFO, message.toString());
+            Logger.getLogger(PgProtocolStream.class.getName()).log(Level.FINE, message.toString());
         } else if (message instanceof NoticeResponse) {
             Logger.getLogger(PgProtocolStream.class.getName()).log(Level.WARNING, message.toString());
         } else if (message instanceof UnknownMessage) {
-            Logger.getLogger(PgProtocolStream.class.getName()).log(Level.INFO, message.toString());
+            Logger.getLogger(PgProtocolStream.class.getName()).log(Level.FINE, message.toString());
         } else {
             consumeOnResponse().completeAsync(() -> message, futuresExecutor);
         }
