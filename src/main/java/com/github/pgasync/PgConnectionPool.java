@@ -404,5 +404,4 @@ public class PgConnectionPool extends PgConnectible {
         }
         return CompletableFuture.completedFuture(null);
     }
-
 }

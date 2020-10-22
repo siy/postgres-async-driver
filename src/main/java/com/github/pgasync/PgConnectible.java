@@ -2,10 +2,8 @@ package com.github.pgasync;
 
 import com.github.pgasync.conversion.DataConverter;
 import com.pgasync.ConnectibleBuilder;
-import com.pgasync.Connection;
 import com.pgasync.Connectible;
 import com.pgasync.Row;
-import com.pgasync.Transaction;
 
 import java.nio.charset.Charset;
 import java.util.Map;
@@ -37,13 +35,6 @@ public abstract class PgConnectible implements Connectible {
         this.encoding = Charset.forName(properties.getEncoding());
         this.obtainStream = obtainStream;
         this.futuresExecutor = futuresExecutor;
-    }
-
-    @Override
-    public CompletableFuture<Transaction> begin() {
-        return getConnection()
-                .thenApply(Connection::begin)
-                .thenCompose(Function.identity());
     }
 
     @Override

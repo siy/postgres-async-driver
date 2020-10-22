@@ -15,6 +15,7 @@
 package com.pgasync;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 /**
  * A unit of work. Transactions must be committed or rolled back, otherwise a
@@ -44,5 +45,7 @@ public interface Transaction extends QueryExecutor {
      * Returns a connection, this transaction belongs to.
      */
     Connection getConnection();
+
+    CompletableFuture<Transaction> begin();
 
 }

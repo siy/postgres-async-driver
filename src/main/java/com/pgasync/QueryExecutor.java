@@ -19,11 +19,6 @@ import java.util.function.Consumer;
 public interface QueryExecutor {
 
     /**
-     * Begins a transaction.
-     */
-    CompletableFuture<Transaction> begin();
-
-    /**
      * Sends parameter less query script. The script may be multi query. Queries are separated with semicolons.
      * Accumulates fetched columns, rows and affected rows counts into memory and transforms them into a ResultSet when each {@link ResultSet} is fetched.
      * Completes returned {@link CompletableFuture} when the whole process of multiple {@link ResultSet}s fetching ends.

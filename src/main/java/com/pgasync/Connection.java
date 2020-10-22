@@ -18,6 +18,7 @@ import com.github.pgasync.Oid;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * A single physical connection to Postgres backend.
@@ -44,6 +45,8 @@ public interface Connection extends QueryExecutor {
      * @return CompletableFuture instance, completed when subscription will be registered at the backend.
      */
     CompletableFuture<Listening> subscribe(String channel, Consumer<String> onNotification);
+
+    CompletableFuture<Transaction> begin();
 
     CompletableFuture<Void> close();
 }
