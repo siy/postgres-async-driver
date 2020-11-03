@@ -23,11 +23,18 @@ import static javax.xml.bind.DatatypeConverter.printHexBinary;
  */
 public class Authentication implements Message {
 
+    public static final Authentication OK = new Authentication(true, false, null);
+    public static final Authentication CLEAR_TEXT = new Authentication(false, false, null);
+    public static final Authentication SCRAM_SHA_256 = new Authentication(false, true, null);
+    public static final String SUPPORTED_SASL = "SCRAM-SHA-256";
+
     private final boolean success;
+    private final boolean scramSha256;
     private final byte[] md5salt;
 
-    public Authentication(boolean success, byte[] md5salt) {
+    public Authentication(boolean success, boolean scramSha256, byte[] md5salt) {
         this.success = success;
+        this.scramSha256 = scramSha256;
         this.md5salt = md5salt;
     }
 
@@ -39,8 +46,12 @@ public class Authentication implements Message {
         return success;
     }
 
+    public boolean isScramSha256() {
+        return scramSha256;
+    }
+
     @Override
     public String toString() {
-        return String.format("Authentication(success=%s, md5salt=%s)", success, md5salt != null ? printHexBinary(md5salt) : null);
+        return String.format("Authentication(success=%s, md5salt=%s, scramSha256=%s)", success, md5salt != null ? printHexBinary(md5salt) : null, scramSha256);
     }
 }

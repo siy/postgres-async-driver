@@ -20,5 +20,6 @@ import com.github.pgasync.message.Message;
  * @author Marat Gainullin
  */
 public enum FIndicators implements Message {
-    SYNC
+    SYNC,
+    SASL_INITIAL
 }

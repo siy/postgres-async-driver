@@ -16,7 +16,7 @@ package com.github.pgasync.netty;
 
 import com.github.pgasync.PgProtocolStream;
 import com.github.pgasync.message.Message;
-import com.github.pgasync.message.backend.SSLHandshake;
+import com.github.pgasync.message.backend.SslHandshake;
 import com.github.pgasync.message.frontend.SSLRequest;
 import com.github.pgasync.message.frontend.StartupMessage;
 import com.github.pgasync.message.frontend.Terminate;
@@ -76,7 +76,7 @@ public class NettyPgProtocolStream extends PgProtocolStream {
                 .thenApply(this::send)
                 .thenCompose(Function.identity())
                 .thenApply(message -> {
-                    if (message == SSLHandshake.INSTANCE) {
+                    if (message == SslHandshake.INSTANCE) {
                         return send(startup);
                     } else {
                         return CompletableFuture.completedFuture(message);
@@ -171,7 +171,7 @@ public class NettyPgProtocolStream extends PgProtocolStream {
             @Override
             public void userEventTriggered(ChannelHandlerContext context, Object evt) {
                 if (evt instanceof SslHandshakeCompletionEvent && ((SslHandshakeCompletionEvent) evt).isSuccess()) {
-                    gotMessage(SSLHandshake.INSTANCE);
+                    gotMessage(SslHandshake.INSTANCE);
                 }
             }
 
