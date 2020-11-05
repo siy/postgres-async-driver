@@ -45,6 +45,7 @@ public class NettyMessageEncoder extends MessageToByteEncoder<Message> {
             new DescribeEncoder(),
             new ExecuteEncoder(),
             new SASLInitialResponseEncoder(),
+            new SASLResponseEncoder(),
             new CloseEncoder(),
             new FIndicatorsEncoder(),
             new TerminateEncoder()

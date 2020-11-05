@@ -60,7 +60,7 @@ public class RowDescriptionDecoder implements Decoder<RowDescription> {
     }
 
     @Override
-    public RowDescription read(ByteBuffer buffer, Charset encoding) {
+    public RowDescription read(ByteBuffer buffer, int contentLength, Charset encoding) {
         RowDescription.ColumnDescription[] columns = new RowDescription.ColumnDescription[buffer.getShort()];
 
         for (int i = 0; i < columns.length; i++) {

@@ -29,7 +29,7 @@ public class ParameterStatusDecoder implements Decoder<ParameterStatus> {
     }
 
     @Override
-    public ParameterStatus read(ByteBuffer buffer, Charset encoding) {
+    public ParameterStatus read(ByteBuffer buffer, int contentLength, Charset encoding) {
         return new ParameterStatus(IO.getCString(buffer, encoding), IO.getCString(buffer, encoding));
     }
 }

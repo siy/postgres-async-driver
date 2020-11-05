@@ -15,12 +15,12 @@
 package com.github.pgasync;
 
 import com.github.pgasync.message.Message;
+import com.github.pgasync.message.backend.Authentication;
 import com.github.pgasync.message.backend.CommandComplete;
 import com.github.pgasync.message.backend.DataRow;
 import com.github.pgasync.message.backend.RowDescription;
 import com.github.pgasync.message.frontend.Bind;
 import com.github.pgasync.message.frontend.Describe;
-import com.github.pgasync.message.frontend.PasswordMessage;
 import com.github.pgasync.message.frontend.Query;
 import com.github.pgasync.message.frontend.StartupMessage;
 
@@ -36,7 +36,7 @@ public interface ProtocolStream {
 
     CompletableFuture<Message> connect(StartupMessage startup);
 
-    CompletableFuture<Message> authenticate(PasswordMessage password);
+    CompletableFuture<Message> authenticate(String userName, String password, Authentication authRequired);
 
     CompletableFuture<Message> send(Message message);
 

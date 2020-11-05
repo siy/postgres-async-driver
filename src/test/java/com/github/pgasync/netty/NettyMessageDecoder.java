@@ -84,7 +84,7 @@ class NettyMessageDecoder extends ByteToMessageDecoder {
             try {
                 if (decoder != null) {
                     ByteBuffer buffer = in.nioBuffer();
-                    out.add(decoder.read(buffer, encoding));
+                    out.add(decoder.read(buffer, length - 4, encoding));
                     in.skipBytes(buffer.position());
                 } else {
                     out.add(new UnknownMessage(id));

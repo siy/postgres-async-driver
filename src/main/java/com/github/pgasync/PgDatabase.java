@@ -17,7 +17,7 @@ public class PgDatabase extends PgConnectible {
     @Override
     public CompletableFuture<Connection> getConnection() {
         return obtainStream.get()
-                .thenApply(stream -> new PgConnection(stream, dataConverter, encoding).connect(username, password, database))
+                .thenApply(stream -> new PgConnection(stream, dataConverter).connect(username, password, database))
                 .thenCompose(Function.identity())
                 .thenApply(connection -> {
                     if (validationQuery != null && !validationQuery.isBlank()) {

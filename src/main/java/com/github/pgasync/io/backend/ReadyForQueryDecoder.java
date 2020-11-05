@@ -38,7 +38,7 @@ import java.nio.charset.Charset;
 public class ReadyForQueryDecoder implements Decoder<ReadyForQuery> {
 
     @Override
-    public ReadyForQuery read(ByteBuffer buffer, Charset encoding) {
+    public ReadyForQuery read(ByteBuffer buffer, int contentLength, Charset encoding) {
         buffer.get();
         return ReadyForQuery.INSTANCE;
     }

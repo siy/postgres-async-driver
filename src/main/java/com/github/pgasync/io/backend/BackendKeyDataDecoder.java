@@ -28,7 +28,7 @@ public class BackendKeyDataDecoder implements Decoder<BackendKeyData> {
     }
 
     @Override
-    public BackendKeyData read(ByteBuffer buffer, Charset encoding) {
+    public BackendKeyData read(ByteBuffer buffer, int contentLength, Charset encoding) {
         return new BackendKeyData(buffer.getInt(), buffer.getInt());
     }
 }

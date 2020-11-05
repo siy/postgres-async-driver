@@ -28,22 +28,18 @@ import com.github.pgasync.message.backend.ParameterStatus;
 import com.github.pgasync.message.backend.ReadyForQuery;
 import com.github.pgasync.message.backend.RowDescription;
 import com.github.pgasync.message.backend.UnknownMessage;
-import com.github.pgasync.message.frontend.Bind;
-import com.github.pgasync.message.frontend.Describe;
-import com.github.pgasync.message.frontend.Execute;
-import com.github.pgasync.message.frontend.FIndicators;
-import com.github.pgasync.message.frontend.PasswordMessage;
-import com.github.pgasync.message.frontend.Query;
+import com.github.pgasync.message.frontend.*;
+import com.github.pgasync.sasl.SaslPrep;
 import com.pgasync.SqlException;
 
 import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -79,9 +75,57 @@ public abstract class PgProtocolStream implements ProtocolStream {
         return wasOnResponse;
     }
 
+    private static String saslNonce() {
+        // Generate nonce
+        SecureRandom rnd = new SecureRandom();
+        byte[] nonce = new byte[24];
+        rnd.nextBytes(nonce);
+        // Sanitize it
+        for (int i = 0; i < nonce.length; i++) {
+            // Ascii space is also substituted with underscore
+            if (nonce[i] < 33 || nonce[i] >= 127) {
+                nonce[i] = '_';
+            }
+        }
+        return new String(nonce, StandardCharsets.US_ASCII);
+    }
+
     @Override
-    public CompletableFuture<Message> authenticate(PasswordMessage password) {
-        return send(password);
+    public CompletableFuture<Message> authenticate(String userName, String password, Authentication authRequired) {
+        if (authRequired.isSaslScramSha256()) {
+            String clientNonce = saslNonce();
+            SASLInitialResponse saslInitialResponse = new SASLInitialResponse(Authentication.SUPPORTED_SASL, null, ""/*SaslPrep.asQueryString(userName) - Postgres requires an empty string here*/, clientNonce);
+            return send(saslInitialResponse)
+                    .thenApply(message -> {
+                        if (message instanceof Authentication) {
+                            String serverFirstMessage = ((Authentication) message).getSaslContinueData();
+                            if (serverFirstMessage != null) {
+                                return send(SASLResponse.of(password, serverFirstMessage, clientNonce, saslInitialResponse.getGs2Header(), saslInitialResponse.getClientFirstMessageBare()));
+                            } else {
+                                throw new IllegalStateException("Bad SASL authentication sequence message detected on 'server-first-message' step");
+                            }
+                        } else {
+                            throw new IllegalStateException("Bad SASL authentication sequence detected on 'server-first-message' step");
+                        }
+                    })
+                    .thenCompose(Function.identity())
+                    .thenApply(message -> {
+                        if (message instanceof Authentication) {
+                            byte[] serverAdditionalData = ((Authentication) message).getSaslAdditionalData();
+                            if (serverAdditionalData != null) {
+                                return offerRoundTrip(() -> {
+                                });
+                            } else {
+                                throw new IllegalStateException("Bad SASL authentication sequence message detected on 'server-final-message' step");
+                            }
+                        } else {
+                            throw new IllegalStateException("Bad SASL authentication sequence detected on 'server-final-message' step");
+                        }
+                    })
+                    .thenCompose(Function.identity());
+        } else {
+            return send(new PasswordMessage(userName, password, authRequired.getMd5Salt(), encoding));
+        }
     }
 
     protected abstract void write(Message... messages);

@@ -48,9 +48,6 @@ public class FIndicatorsEncoder implements Encoder<FIndicators> {
             case SYNC:
                 sync(buffer);
                 break;
-            case SASL_INITIAL:
-                saslInitial(buffer, encoding);
-                break;
             default:
                 throw new IllegalStateException(msg.name());
         }
@@ -59,14 +56,6 @@ public class FIndicatorsEncoder implements Encoder<FIndicators> {
     void sync(ByteBuffer buffer) {
         buffer.put((byte) 'S');
         buffer.putInt(4);
-    }
-
-    void saslInitial(ByteBuffer buffer, Charset encoding) {
-        buffer.put((byte) 'p');
-        buffer.putInt(0);
-        IO.putCString(buffer, Authentication.SUPPORTED_SASL, encoding);
-        buffer.putInt(-1);
-        buffer.putInt(1, buffer.position() - 1);
     }
 
 }

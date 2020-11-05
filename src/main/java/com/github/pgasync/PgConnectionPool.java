@@ -321,7 +321,7 @@ public class PgConnectionPool extends PgConnectible {
                 } else {
                     if (tryIncreaseSize()) {
                         obtainStream.get()
-                                .thenApply(stream -> new PooledPgConnection(new PgConnection(stream, dataConverter, encoding))
+                                .thenApply(stream -> new PooledPgConnection(new PgConnection(stream, dataConverter))
                                         .connect(username, password, database))
                                 .thenCompose(Function.identity())
                                 .thenApply(pooledConnection -> {

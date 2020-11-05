@@ -34,6 +34,6 @@ public interface Decoder<T extends Message> {
     /**
      * @return Decoded message
      */
-    T read(ByteBuffer buffer, Charset encoding);
+    T read(ByteBuffer buffer, int contentLength, Charset encoding);
 
 }

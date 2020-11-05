@@ -48,7 +48,7 @@ public class DataRowDecoder implements Decoder<DataRow> {
     }
 
     @Override
-    public DataRow read(ByteBuffer buffer, Charset encoding) {
+    public DataRow read(ByteBuffer buffer, int contentLength, Charset encoding) {
         byte[][] values = new byte[buffer.getShort()][];
         for (int i = 0; i < values.length; i++) {
             int length = buffer.getInt();

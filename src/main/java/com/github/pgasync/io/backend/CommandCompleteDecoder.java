@@ -52,7 +52,7 @@ public class CommandCompleteDecoder implements Decoder<CommandComplete> {
     }
 
     @Override
-    public CommandComplete read(ByteBuffer buffer, Charset encoding) {
+    public CommandComplete read(ByteBuffer buffer, int contentLength, Charset encoding) {
         String tag = getCString(buffer, encoding);
         int affectedRows;
         if (tag.contains("INSERT") || tag.contains("UPDATE") || tag.contains("DELETE")) {

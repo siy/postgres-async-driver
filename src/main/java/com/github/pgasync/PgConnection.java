@@ -16,7 +16,6 @@ package com.github.pgasync;
 
 import static com.github.pgasync.message.backend.RowDescription.ColumnDescription;
 
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -43,7 +42,6 @@ import com.github.pgasync.message.frontend.Close;
 import com.github.pgasync.message.frontend.Describe;
 import com.github.pgasync.message.Message;
 import com.github.pgasync.message.frontend.Parse;
-import com.github.pgasync.message.frontend.PasswordMessage;
 import com.github.pgasync.message.frontend.Query;
 import com.github.pgasync.message.frontend.StartupMessage;
 
@@ -131,14 +129,12 @@ public class PgConnection implements Connection {
 
     private final ProtocolStream stream;
     private final DataConverter dataConverter;
-    private final Charset encoding;
 
     private Columns currentColumns;
 
-    PgConnection(ProtocolStream stream, DataConverter dataConverter, Charset encoding) {
+    PgConnection(ProtocolStream stream, DataConverter dataConverter) {
         this.stream = stream;
         this.dataConverter = dataConverter;
-        this.encoding = encoding;
     }
 
     CompletableFuture<Connection> connect(String username, String password, String database) {
@@ -150,7 +146,7 @@ public class PgConnection implements Connection {
 
     private CompletableFuture<? extends Message> authenticate(String username, String password, Message message) {
         return message instanceof Authentication && !((Authentication) message).isAuthenticationOk()
-                ? stream.authenticate(new PasswordMessage(username, password, ((Authentication) message).getMd5Salt(), encoding))
+                ? stream.authenticate(username, password, ((Authentication) message))
                 : CompletableFuture.completedFuture(message);
     }
 

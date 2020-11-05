@@ -43,7 +43,7 @@ public class ParseCompleteDecoder implements Decoder<BIndicators> {
     }
 
     @Override
-    public BIndicators read(ByteBuffer buffer, Charset encoding) {
+    public BIndicators read(ByteBuffer buffer, int contentLength, Charset encoding) {
         return BIndicators.PARSE_COMPLETE;
     }
 

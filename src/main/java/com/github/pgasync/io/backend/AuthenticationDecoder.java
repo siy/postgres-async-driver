@@ -66,29 +66,15 @@ public class AuthenticationDecoder implements Decoder<Authentication> {
     }
 
     @Override
-    public Authentication read(ByteBuffer buffer, Charset encoding) {
+    public Authentication read(ByteBuffer buffer, int contentLength, Charset encoding) {
         int type = buffer.getInt();
         switch (type) {
             case CLEARTEXT_PASSWORD:
                 return Authentication.CLEAR_TEXT;
             case PASSWORD_MD5_CHALLENGE:
-                byte[] salt = new byte[4];
-                buffer.get(salt);
-                return new Authentication(false, false, salt);
-            case SASL:
-                boolean scramSha256Met = false;
-                String sasl = IO.getCString(buffer, encoding);
-                while (!sasl.isEmpty()) {
-                    if ("SCRAM-SHA-256".equals(sasl)) {
-                        scramSha256Met = true;
-                    }
-                    sasl = IO.getCString(buffer, encoding);
-                }
-                if (scramSha256Met) {
-                    return Authentication.SCRAM_SHA_256;
-                } else {
-                    throw new UnsupportedOperationException("The server doesn't support " + Authentication.SUPPORTED_SASL + " SASL mechanism");
-                }
+                byte[] md5Salt = new byte[4];
+                buffer.get(md5Salt);
+                return new Authentication(false, false, md5Salt, null, null);
             case AUTHENTICATION_SSPI:
                 throw new UnsupportedOperationException(AUTHENTICATION_IS_NOT_SUPPORTED);
             case AUTHENTICATION_GSS:
@@ -99,10 +85,28 @@ public class AuthenticationDecoder implements Decoder<Authentication> {
                 throw new UnsupportedOperationException("AuthenticationKerberosV5" + AUTHENTICATION_IS_NOT_SUPPORTED);
             case OK:
                 return Authentication.OK;
+            case SASL:
+                boolean scramSha256Met = false;
+                String sasl = IO.getCString(buffer, encoding);
+                while (!sasl.isEmpty()) {
+                    if (Authentication.SUPPORTED_SASL.equals(sasl)) {
+                        scramSha256Met = true;
+                    }
+                    sasl = IO.getCString(buffer, encoding);
+                }
+                if (scramSha256Met) {
+                    return Authentication.SCRAM_SHA_256;
+                } else {
+                    throw new UnsupportedOperationException("The server doesn't support " + Authentication.SUPPORTED_SASL + " SASL mechanism");
+                }
             case SASL_CONTINUE:
-                return Authentication.OK;
+                byte[] saslContinueData = new byte[contentLength - 4]; // Minus type field size
+                buffer.get(saslContinueData);
+                return new Authentication(false, false, null, new String(saslContinueData, encoding), null);
             case SASL_FINAL:
-                return Authentication.OK;
+                byte[] saslAdditionalData = new byte[contentLength - 4]; // Minus type field size
+                buffer.get(saslAdditionalData);
+                return new Authentication(false, false, null, null, saslAdditionalData);
             default:
                 throw new UnsupportedOperationException("Unsupported authentication type: " + type);
         }

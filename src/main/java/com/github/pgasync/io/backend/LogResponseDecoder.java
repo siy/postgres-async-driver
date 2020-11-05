@@ -30,7 +30,7 @@ import java.nio.charset.Charset;
 public abstract class LogResponseDecoder<M extends LogResponse> implements Decoder<M> {
 
     @Override
-    public M read(ByteBuffer buffer, Charset encoding) {
+    public M read(ByteBuffer buffer, int contentLength, Charset encoding) {
         String level = null;
         String code = null;
         String message = null;
