@@ -90,20 +90,6 @@ public abstract class PgProtocolStream implements ProtocolStream {
                             throw new IllegalStateException("Bad SASL authentication sequence detected on 'server-first-message' step");
                         }
                     })
-                    .thenCompose(Function.identity())
-                    .thenApply(message -> {
-                        if (message instanceof Authentication) {
-                            byte[] serverAdditionalData = ((Authentication) message).getSaslAdditionalData();
-                            if (serverAdditionalData != null) {
-                                return offerRoundTrip(() -> {
-                                });
-                            } else {
-                                throw new IllegalStateException("Bad SASL authentication sequence message detected on 'server-final-message' step");
-                            }
-                        } else {
-                            throw new IllegalStateException("Bad SASL authentication sequence detected on 'server-final-message' step");
-                        }
-                    })
                     .thenCompose(Function.identity());
         } else {
             return send(new PasswordMessage(userName, password, authRequired.getMd5Salt(), encoding));
@@ -213,7 +199,7 @@ public abstract class PgProtocolStream implements ProtocolStream {
             }
         } else if (message instanceof Authentication) {
             Authentication authentication = (Authentication) message;
-            if (authentication.isAuthenticationOk()) {
+            if (authentication.isAuthenticationOk() || authentication.isSaslServerFinalResponse()) {
                 readyForQueryPendingMessage = message;
             } else {
                 consumeOnResponse().completeAsync(() -> message, futuresExecutor);

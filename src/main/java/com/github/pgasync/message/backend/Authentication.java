@@ -113,6 +113,10 @@ public class Authentication implements Message {
         return ok;
     }
 
+    public boolean isSaslServerFinalResponse() {
+        return saslAdditionalData != null;
+    }
+
     public boolean isSaslScramSha256() {
         return saslScramSha256;
     }
