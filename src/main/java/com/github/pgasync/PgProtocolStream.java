@@ -75,25 +75,10 @@ public abstract class PgProtocolStream implements ProtocolStream {
         return wasOnResponse;
     }
 
-    private static String saslNonce() {
-        // Generate nonce
-        SecureRandom rnd = new SecureRandom();
-        byte[] nonce = new byte[24];
-        rnd.nextBytes(nonce);
-        // Sanitize it
-        for (int i = 0; i < nonce.length; i++) {
-            // Ascii space is also substituted with underscore
-            if (nonce[i] < 33 || nonce[i] >= 127) {
-                nonce[i] = '_';
-            }
-        }
-        return new String(nonce, StandardCharsets.US_ASCII);
-    }
-
     @Override
     public CompletableFuture<Message> authenticate(String userName, String password, Authentication authRequired) {
         if (authRequired.isSaslScramSha256()) {
-            String clientNonce = saslNonce();
+            String clientNonce = UUID.randomUUID().toString();
             SASLInitialResponse saslInitialResponse = new SASLInitialResponse(Authentication.SUPPORTED_SASL, null, ""/*SaslPrep.asQueryString(userName) - Postgres requires an empty string here*/, clientNonce);
             return send(saslInitialResponse)
                     .thenApply(message -> {
