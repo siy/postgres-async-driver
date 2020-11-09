@@ -29,12 +29,9 @@ import com.github.pgasync.message.backend.ReadyForQuery;
 import com.github.pgasync.message.backend.RowDescription;
 import com.github.pgasync.message.backend.UnknownMessage;
 import com.github.pgasync.message.frontend.*;
-import com.github.pgasync.sasl.SaslPrep;
 import com.pgasync.SqlException;
 
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
