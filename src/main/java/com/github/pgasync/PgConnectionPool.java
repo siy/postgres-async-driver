@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -244,7 +245,7 @@ public class PgConnectionPool extends PgConnectible {
 
     private final int maxConnections;
     private final int maxStatements;
-    private final ReentrantLock lock = new ReentrantLock();
+    private final Lock lock = new ReentrantLock();
 
     @GuardedBy("lock")
     private int size;
@@ -253,7 +254,7 @@ public class PgConnectionPool extends PgConnectible {
     @GuardedBy("lock")
     private final Queue<CompletableFuture<? super Connection>> uponAvailableSubscribers = new LinkedList<>();
     @GuardedBy("lock")
-    private final Queue<PooledPgConnection> availableConnections = new LinkedList<>();
+    private final LinkedList<PooledPgConnection> availableConnections = new LinkedList<>();
     @GuardedBy("lock")
     private CompletableFuture<Void> uponFullyAvailable;
 
@@ -315,6 +316,7 @@ public class PgConnectionPool extends PgConnectible {
             if (closed) {
                 futuresExecutor.execute(() -> uponAvailable.completeExceptionally(new SqlException("Connection pool is closed")));
             } else {
+                sanitizeAvailableConnections();
                 Connection connection = availableConnections.poll();
                 if (connection != null) {
                     uponAvailable.completeAsync(() -> connection, futuresExecutor);
@@ -367,6 +369,16 @@ public class PgConnectionPool extends PgConnectible {
         }
 
         return uponAvailable;
+    }
+
+    private void sanitizeAvailableConnections() {
+        for (int i = availableConnections.size() - 1; i >= 0; i--) {
+            PooledPgConnection connection = availableConnections.get(i);
+            if (!connection.isConnected()) {
+                availableConnections.remove(i);
+                size--;
+            }
+        }
     }
 
     private boolean tryIncreaseSize() {
