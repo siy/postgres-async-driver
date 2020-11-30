@@ -49,4 +49,6 @@ public interface Connection extends QueryExecutor {
     CompletableFuture<Transaction> begin();
 
     CompletableFuture<Void> close();
+
+    boolean isConnected();
 }

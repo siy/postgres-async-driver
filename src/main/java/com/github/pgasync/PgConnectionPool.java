@@ -112,7 +112,7 @@ public class PgConnectionPool extends PgConnectible {
             return delegate.connect(username, password, database).thenApply(conn -> PooledPgConnection.this);
         }
 
-        boolean isConnected() {
+        public boolean isConnected() {
             return delegate.isConnected();
         }
 
@@ -254,7 +254,7 @@ public class PgConnectionPool extends PgConnectible {
     @GuardedBy("lock")
     private final Queue<CompletableFuture<? super Connection>> uponAvailableSubscribers = new LinkedList<>();
     @GuardedBy("lock")
-    private final LinkedList<PooledPgConnection> availableConnections = new LinkedList<>();
+    private final Queue<PooledPgConnection> availableConnections = new LinkedList<>();
     @GuardedBy("lock")
     private CompletableFuture<Void> uponFullyAvailable;
 
@@ -316,8 +316,7 @@ public class PgConnectionPool extends PgConnectible {
             if (closed) {
                 futuresExecutor.execute(() -> uponAvailable.completeExceptionally(new SqlException("Connection pool is closed")));
             } else {
-                sanitizeAvailableConnections();
-                Connection connection = availableConnections.poll();
+                Connection connection = firstAliveConnection();
                 if (connection != null) {
                     uponAvailable.completeAsync(() -> connection, futuresExecutor);
                 } else {
@@ -371,14 +370,13 @@ public class PgConnectionPool extends PgConnectible {
         return uponAvailable;
     }
 
-    private void sanitizeAvailableConnections() {
-        for (int i = availableConnections.size() - 1; i >= 0; i--) {
-            PooledPgConnection connection = availableConnections.get(i);
-            if (!connection.isConnected()) {
-                availableConnections.remove(i);
-                size--;
-            }
+    private Connection firstAliveConnection() {
+        Connection connection = availableConnections.poll();
+        while (connection != null && !connection.isConnected()) {
+            size--;
+            connection = availableConnections.poll();
         }
+        return connection;
     }
 
     private boolean tryIncreaseSize() {

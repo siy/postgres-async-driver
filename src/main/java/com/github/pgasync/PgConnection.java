@@ -150,7 +150,7 @@ public class PgConnection implements Connection {
                 : CompletableFuture.completedFuture(message);
     }
 
-    boolean isConnected() {
+    public boolean isConnected() {
         return stream.isConnected();
     }
 
