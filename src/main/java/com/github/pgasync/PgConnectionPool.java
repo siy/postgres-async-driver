@@ -24,13 +24,7 @@ import com.pgasync.ResultSet;
 import com.pgasync.Transaction;
 
 import javax.annotation.concurrent.GuardedBy;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.locks.Lock;
@@ -128,7 +122,7 @@ public class PgConnectionPool extends PgConnectible {
                             return null;
                         });
             } else {
-                onComplete.completeAsync(() -> null, futuresExecutor);
+                futuresExecutor.execute(() -> onComplete.complete(null));
             }
         }
 
@@ -245,23 +239,71 @@ public class PgConnectionPool extends PgConnectible {
 
     private final int maxConnections;
     private final int maxStatements;
-    private final Lock lock = new ReentrantLock();
 
-    @GuardedBy("lock")
+    private final Lock guard = new ReentrantLock();
+    @GuardedBy("guard")
     private int size;
-    @GuardedBy("lock")
+    @GuardedBy("guard")
     private boolean closed;
-    @GuardedBy("lock")
+    @GuardedBy("guard")
     private final Queue<CompletableFuture<? super Connection>> uponAvailableSubscribers = new LinkedList<>();
-    @GuardedBy("lock")
+    @GuardedBy("guard")
     private final Queue<PooledPgConnection> availableConnections = new LinkedList<>();
-    @GuardedBy("lock")
+    @GuardedBy("guard")
     private CompletableFuture<Void> uponFullyAvailable;
+    @GuardedBy("guard")
+    private final List<Runnable> executed = new ArrayList<>(32);
 
     public PgConnectionPool(ConnectibleBuilder.ConnectibleProperties properties, Supplier<CompletableFuture<ProtocolStream>> obtainStream, Executor futuresExecutor) {
         super(properties, obtainStream, futuresExecutor);
         this.maxConnections = properties.getMaxConnections();
         this.maxStatements = properties.getMaxStatements();
+    }
+
+    private <T> T locked(Supplier<T> action) {
+        Runnable[] copy = new Runnable[]{};
+        guard.lock();
+        try {
+            return action.get();
+        } finally {
+            try {
+                copy = executed.toArray(copy);
+                executed.clear();
+            } finally {
+                guard.unlock();
+            }
+            execute(copy);
+        }
+    }
+
+    private void locked(Runnable action) {
+        Runnable[] copy = new Runnable[]{};
+        guard.lock();
+        try {
+            action.run();
+        } finally {
+            try {
+                copy = executed.toArray(copy);
+                executed.clear();
+            } finally {
+                guard.unlock();
+            }
+            execute(copy);
+        }
+    }
+
+    private void execute(Runnable[] targets) {
+        for (Runnable r : targets) {
+            try {
+                futuresExecutor.execute(r);
+            } catch (Throwable th) { // Catch here because of simple executors like (r -> { r.run(); })
+                Logger.getLogger(PgConnectionPool.class.getName()).log(Level.SEVERE, th.getMessage(), th);
+            }
+        }
+    }
+
+    private void toExecute(Runnable r) {
+        executed.add(r);
     }
 
     private CompletableFuture<Void> fullyAvailable() {
@@ -277,48 +319,43 @@ public class PgConnectionPool extends PgConnectible {
         }
     }
 
-    @Override
-    public CompletableFuture<Void> close() {
-        lock.lock();
-        try {
-            closed = true;
-            while (!uponAvailableSubscribers.isEmpty()) {
-                CompletableFuture<? super Connection> queued = uponAvailableSubscribers.poll();
-                futuresExecutor.execute(() -> queued.completeExceptionally(new SqlException("Connection pool is closing")));
-            }
-            return fullyAvailable()
-                    .thenApply(v -> {
-                        lock.lock();
-                        try {
-                            uponFullyAvailable = null;
-                            Collection<CompletableFuture<Void>> shutdownTasks = new ArrayList<>();
-                            while (!availableConnections.isEmpty()) {
-                                PooledPgConnection connection = availableConnections.poll();
-                                shutdownTasks.add(connection.shutdown());
-                                size--;
-                            }
-                            return CompletableFuture.allOf(shutdownTasks.toArray(CompletableFuture<?>[]::new));
-                        } finally {
-                            lock.unlock();
-                        }
-                    })
-                    .thenCompose(Function.identity());
-        } finally {
-            lock.unlock();
+    private void discardAvailableSubscribers(String reason) {
+        while (!uponAvailableSubscribers.isEmpty()) {
+            CompletableFuture<? super Connection> queued = uponAvailableSubscribers.poll();
+            toExecute(() -> queued.completeExceptionally(new SqlException(reason)));
         }
     }
 
     @Override
+    public CompletableFuture<Void> close() {
+        return locked(() -> {
+            closed = true;
+            discardAvailableSubscribers("Connection pool is closing");
+            return fullyAvailable()
+                    .thenApply(v -> locked(() -> {
+                        uponFullyAvailable = null;
+                        Collection<CompletableFuture<Void>> shutdownTasks = new ArrayList<>();
+                        while (!availableConnections.isEmpty()) {
+                            PooledPgConnection connection = availableConnections.poll();
+                            shutdownTasks.add(connection.shutdown());
+                            size--;
+                        }
+                        return CompletableFuture.allOf(shutdownTasks.toArray(CompletableFuture<?>[]::new));
+                    }))
+                    .thenCompose(Function.identity());
+        });
+    }
+
+    @Override
     public CompletableFuture<Connection> getConnection() {
-        CompletableFuture<Connection> uponAvailable = new CompletableFuture<>();
-        lock.lock();
-        try {
+        return locked(() -> {
+            CompletableFuture<Connection> uponAvailable = new CompletableFuture<>();
             if (closed) {
-                futuresExecutor.execute(() -> uponAvailable.completeExceptionally(new SqlException("Connection pool is closed")));
+                toExecute(() -> uponAvailable.completeExceptionally(new SqlException("Connection pool is closed")));
             } else {
                 Connection connection = firstAliveConnection();
                 if (connection != null) {
-                    uponAvailable.completeAsync(() -> connection, futuresExecutor);
+                    toExecute(() -> uponAvailable.complete(connection));
                 } else {
                     if (tryIncreaseSize()) {
                         obtainStream.get()
@@ -343,31 +380,28 @@ public class PgConnectionPool extends PgConnectible {
                                     }
                                 })
                                 .thenCompose(Function.identity())
-                                .thenAccept(pooledConnection -> uponAvailable.completeAsync(() -> pooledConnection, futuresExecutor))
-                                .exceptionally(th -> {
-                                    lock.lock();
-                                    try {
-                                        size--;
-                                        futuresExecutor.execute(() -> uponAvailable.completeExceptionally(th));
-                                        if (uponFullyAvailable != null && size <= availableConnections.size()) {
-                                            uponFullyAvailable.completeAsync(null, futuresExecutor);
-                                        }
-                                        return null;
-                                    } finally {
-                                        lock.unlock();
-                                    }
-                                });
+                                .thenAccept(pooledConnection -> locked(() -> toExecute(() -> uponAvailable.complete(pooledConnection))))
+                                .exceptionally(th -> locked(() -> {
+                                    size--;
+                                    toExecute(() -> uponAvailable.completeExceptionally(th));
+                                    discardAvailableSubscribers("Unable to connect");
+                                    checkFullyAvailable();
+                                    return null;
+                                }));
                     } else {
                         // Pool is full now and all connections are busy
                         uponAvailableSubscribers.offer(uponAvailable);
                     }
                 }
             }
-        } finally {
-            lock.unlock();
-        }
+            return uponAvailable;
+        });
+    }
 
-        return uponAvailable;
+    private void checkFullyAvailable() {
+        if (uponFullyAvailable != null && size <= availableConnections.size()) {
+            toExecute(() -> uponFullyAvailable.complete(null));
+        }
     }
 
     private Connection firstAliveConnection() {
@@ -392,26 +426,21 @@ public class PgConnectionPool extends PgConnectible {
         if (connection == null) {
             throw new IllegalArgumentException("'connection' should be not null");
         }
-        lock.lock();
-        try {
+        return locked(() -> {
             if (connection.isConnected()) {
                 if (!uponAvailableSubscribers.isEmpty()) {
-                    uponAvailableSubscribers.poll().completeAsync(() -> connection, futuresExecutor);
+                    CompletableFuture<? super Connection> subscriber = uponAvailableSubscribers.poll();
+                    toExecute(() -> subscriber.complete(connection));
                 } else {
                     availableConnections.offer(connection);
-                    if (uponFullyAvailable != null && size <= availableConnections.size()) {
-                        uponFullyAvailable.complete(null);
-                    }
+                    checkFullyAvailable();
                 }
             } else {
                 size--;
-                if (uponFullyAvailable != null && size <= availableConnections.size()) {
-                    uponFullyAvailable.complete(null);
-                }
+                discardAvailableSubscribers("Connection lost");
+                checkFullyAvailable();
             }
-        } finally {
-            lock.unlock();
-        }
-        return CompletableFuture.completedFuture(null);
+            return CompletableFuture.completedFuture(null);
+        });
     }
 }
