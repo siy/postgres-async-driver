@@ -117,7 +117,7 @@ public class PerformanceTest {
 
     private class Batch {
 
-        private long batchSize;
+        private final long batchSize;
         private long performed;
         private long startedAt;
         private CompletableFuture<Long> onBatch;
