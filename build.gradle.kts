@@ -5,7 +5,6 @@ repositories {
 
 plugins {
     id("java")
-    id("maven")
 }
 
 dependencies {
