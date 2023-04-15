@@ -23,6 +23,8 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -73,6 +75,38 @@ public class QueryResultTest {
     public void shouldReturnUpdatedRowsCount() {
         Assert.assertEquals(3, dbr.query("INSERT INTO CONN_TEST (ID) VALUES (9),(10),(11)").affectedRows());
         Assert.assertEquals(3, dbr.query("UPDATE CONN_TEST SET ID = NULL WHERE ID IN (9,10,11)").affectedRows());
+    }
+
+    @Test
+    public void shouldParseDoStatement() {
+        dbr.script("" +
+                "create table locks\n" +
+                "(\n" +
+                "    id bigint not null,\n" +
+                "    name character varying(255),\n" +
+                "    constraint locks_pkey primary key (id)\n" +
+                ");\n" +
+                "create type item as\n" +
+                "(\n" +
+                "\tid bigint,\n" +
+                "\tname character varying(255)\n" +
+                ");\n" +
+                "create or replace procedure updateItems(vs item[])\n" +
+                "language plpgsql\n" +
+                "as $$\n" +
+                "declare\n" +
+                "  r item;\n" +
+                "begin  \n" +
+                "  foreach r in array vs loop \n" +
+                "    if r.id is not null then\n" +
+                "      raise notice 'id: %; name: %;', r.id, r.name;\n" +
+                "      update locks l set name = r.name where l.id = r.id;\n" +
+                "    end if;\n" +
+                "  end loop;\n" +
+                "end $$;\n");
+        dbr.query("call updateItems(array[(1, $1::character varying(255)), (2, $2::character varying(255)), (null, $3::character varying(255))]::item[]);",
+                Arrays.asList("fn***1", "fn***2", null)
+        );
     }
 
     @Test(expected = SqlException.class)

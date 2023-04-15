@@ -1,20 +1,9 @@
 # postgres-async-driver - Asynchronous PostgreSQL Java driver
 
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.alaisi.pgasync/postgres-async-driver/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.alaisi.pgasync/postgres-async-driver/)
-
 Postgres-async-driver is a non-blocking Java driver for PostgreSQL. The driver supports connection pooling, prepared statements, transactions, all standard SQL types and custom column types. 
 
 ## Download
 
-Postgres-async-driver is available on [Maven Central](http://search.maven.org/#search|ga|1|g%3A%22com.github.alaisi.pgasync).
-
-```xml
-<dependency>
-    <groupId>com.github.alaisi.pgasync</groupId>
-    <artifactId>postgres-async-driver</artifactId>
-    <version>0.9</version>
-</dependency>
-```
 
 ## Usage
 
@@ -110,12 +99,3 @@ Db db = return new ConnectionPoolBuilder()
     .converters(new JsonConverter())
     .build();
 ```
-
-## Used in
-
-* [postgres.async for Clojure](https://github.com/alaisi/postgres.async)
-
-## References
-* [Scala postgresql-async](https://github.com/mauricio/postgresql-async)
-* [PostgreSQL JDBC Driver](http://jdbc.postgresql.org/about/about.html)
-
