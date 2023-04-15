@@ -19,5 +19,5 @@ tasks.withType<JavaCompile> {
     options.encoding = "utf-8"
 }
 
-group = "com.github.alaisi.pgasync"
-version = "0.10"
+group = "com.github.pgasync"
+version = "1.0.3"
