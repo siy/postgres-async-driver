@@ -1,6 +1,6 @@
 # pgAsync - Asynchronous PostgreSQL Java driver
 
-Postgres-async-driver is a non-blocking Java driver for PostgreSQL. The driver supports connection pooling, prepared statements, transactions, all standard SQL types and custom column types. 
+pgAsync is a non-blocking Java driver for PostgreSQL. The driver supports connection pooling, prepared statements, transactions, all standard SQL types and custom column types. 
 
 ## Install
 The source dependency is available for this library. Add this in your `settings.gradle.kts` file:
