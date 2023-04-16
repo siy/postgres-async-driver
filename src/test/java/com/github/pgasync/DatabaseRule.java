@@ -6,6 +6,7 @@ import com.github.pgasync.netty.NettyConnectibleBuilder;
 import com.pgasync.Connectible;
 import com.pgasync.ConnectibleBuilder;
 import com.pgasync.ResultSet;
+import com.pgasync.Row;
 import org.junit.rules.ExternalResource;
 
 import java.io.IOException;
@@ -13,6 +14,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import ru.yandex.qatools.embed.postgresql.PostgresExecutable;
 import ru.yandex.qatools.embed.postgresql.PostgresProcess;
@@ -90,6 +92,18 @@ class DatabaseRule extends ExternalResource {
     }
 
     Collection<ResultSet> script(String sql) {
+        pool().getConnection().thenAccept(connection ->
+                connection.begin().thenAccept(transaction ->
+                        transaction.completeQuery("SELECT COUNT(*) cnt FROM CP_TEST")
+                                .thenApply(resultSet -> {
+                                    Row resultItem = resultSet.at(0);
+                                    return resultItem.getInt("cnt");
+                                })
+                                .thenApply(count -> transaction.completeQuery("Insert into cp_log (cnt) Values($1)", count))
+                                .thenCompose(Function.identity())
+                                .thenAccept(insertResult -> transaction.commit())
+                )
+        );
         return block(pool().completeScript(sql));
     }
 

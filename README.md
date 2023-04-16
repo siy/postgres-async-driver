@@ -2,100 +2,119 @@
 
 Postgres-async-driver is a non-blocking Java driver for PostgreSQL. The driver supports connection pooling, prepared statements, transactions, all standard SQL types and custom column types. 
 
-## Download
-
-
+## Install
+The source dependency is available for this library. Add this in your `settings.gradle.kts` file:
+```java
+sourceControl {
+    gitRepository(uri("https://github.com/marat-gainullin/postgres-async-driver.git")) {
+        producesModule("com.github.pgasync:postgres-async-driver")
+    }
+}
+```
+Add the following dependency to your `build.gradle.kts` file:
+```java
+dependencies{
+    implementation("com.github.pgasync:postgres-async-driver:v1.0.3")
+}
+```
 ## Usage
+The library is compatible with any network framework like Grizzly, MINA, Netty, or any other, which works with `java.nio.ByteBuffer`. 
+The following examples use `Netty` as a network infrastructure.
 
-### Hello world
-
-Querying for a set returns an [rx.Observable](http://reactivex.io/documentation/observable.html) that emits a single [ResultSet](https://github.com/alaisi/postgres-async-driver/blob/master/src/main/java/com/github/pgasync/ResultSet.java).
+### SQL Sripts
 
 ```java
-Db db = ...;
-db.querySet("select 'Hello world!' as message")
-    .map(result -> result.row(0).getString("message"))
-    .subscribe(System.out::println)
-
-// => Hello world
+Connectible pool = new NettyConnectibleBuilder()
+        .database(envOrDefault("PG_DATABASE", "postgres"))
+        .username(envOrDefault("PG_USERNAME", "postgres"))
+        .password(envOrDefault("PG_PASSWORD", "postgres"))
+        .ssl(true)
+        .maxConnections(size);
+        .pool();
+// ...        
+        pool.completeScript(
+                 "DROP TABLE IF EXISTS CP_TEST;" +
+                 "CREATE TABLE CP_TEST (ID VARCHAR(255) PRIMARY KEY)"
+        ).thenAccept(resultSets -> {
+            resultSets.forEach(resultSet -> {
+                // resultSet.
+            });
+        });
 ```
 
-Querying for rows returns an [rx.Observable](http://reactivex.io/documentation/observable.html) that emits 0-n [Rows](https://github.com/alaisi/postgres-async-driver/blob/master/src/main/java/com/github/pgasync/Row.java). The rows are emitted immediately as they are received from the server instead of waiting for the entire query to complete.
-
+### SQL Queries
 ```java
-Db db = ...;
-db.queryRows("select unnest('{ hello, world }'::text[] as message)")
-    .map(row -> row.getString("message"))
-    .subscribe(System.out::println)
+Connectible pool = new NettyConnectibleBuilder()
+        .database(envOrDefault("PG_DATABASE", "postgres"))
+        .username(envOrDefault("PG_USERNAME", "postgres"))
+        .password(envOrDefault("PG_PASSWORD", "postgres"))
+        .ssl(true)
+        .maxConnections(size);
+        .pool();
 
-// => hello
-// => world
-```
+// ...
+pool.completeQuery("SELECT COUNT(*) cnt FROM CP_TEST").thenAccept(resultSet -> {
+    // resultSet.size() // Here it is always 1
+    Row resultItem = resultSet.at(0);
+    int count = resultItem.getInt("cnt");
+    // count ...
+});
 
-### Creating a Db
-
-Db is a connection pool that is created with [`ConnectionPoolBuilder`](https://github.com/alaisi/postgres-async-driver/blob/master/src/main/java/com/github/pgasync/ConnectionPoolBuilder.java)
-
-```java
-Db db = new ConnectionPoolBuilder()
-    .hostname("localhost")
-    .port(5432)
-    .database("db")
-    .username("user")
-    .password("pass")
-    .poolSize(20)
-    .build();
-```
-
-Each connection *pool* will start only one IO thread used in communicating with PostgreSQL backend and executing callbacks for all connections.
-
-### Prepared statements
-
-Prepared statements use native PostgreSQL syntax `$index`. Supported parameter types are all primitive types, `String`, `BigDecimal`, `BigInteger`, `UUID`, temporal types in `java.sql` package and `byte[]`.
-
-```java
-db.querySet("insert into message(id, body) values($1, $2)", 123, "hello")
-    .subscribe(result -> out.printf("Inserted %d rows", result.affectedRows() ));
+// ... 
+pool.completeQuery("INSERT INTO CP_TEST VALUES($1)", singletonList(10)).thenAccept(resultSet -> {
+    int inserted = resultSet.affectedRows();
+    // inserted ...
+});
 ```
 
 ### Transactions
 
-A transactional unit of work is started with `begin()`. Queries issued to the emitted [Transaction](https://github.com/alaisi/postgres-async-driver/blob/master/src/main/java/com/github/pgasync/Transaction.java) are executed in the same transaction and the tx is automatically rolled back on query failure.
+A transactional unit of work is started with `begin()`.
 
 ```java
-db.begin()
-    .flatMap(tx -> tx.querySet("insert into products (name) values ($1) returning id", "saw")
-        .map(productsResult -> productsResult.row(0).getLong("id"))
-        .flatMap(id -> tx.querySet("insert into promotions (product_id) values ($1)", id))
-        .flatMap(promotionsResult -> tx.commit())
-    ).subscribe(
-        __ -> System.out.println("Transaction committed"),
-        Throwable::printStackTrace);
-
+        pool.getConnection().thenAccept(connection ->
+                connection.begin().thenAccept(transaction ->
+                        transaction.completeQuery("SELECT COUNT(*) cnt FROM CP_TEST")
+                                .thenApply(resultSet -> {
+                                    Row resultItem = resultSet.at(0);
+                                    return resultItem.getInt("cnt");
+                                })
+                                .thenApply(count -> transaction.completeQuery("Insert into cp_log (cnt) Values($1)", count))
+                                .thenCompose(Function.identity())
+                                .thenAccept(insertResult -> transaction.commit())
+                )
+        );
 ```
 
-### Custom data types
-
-Support for additional data types requires registering converters to [`ConnectionPoolBuilder`](https://github.com/alaisi/postgres-async-driver/blob/master/src/main/java/com/github/pgasync/ConnectionPoolBuilder.java)
-
+### Pretty Kotlin
+To avoid using long chains of `CompleteableFuture.then*()` methods, use Kotlin programming language and its brilliant feature `suspend functions`. If you apply such trick like the following:
 ```java
-class JsonConverter implements Converter<example.Json> {
-    @Override
-    public Class<example.Json> type() {
-        return example.Json.class;
-    }
-    @Override
-    public byte[] from(example.Json json) {
-        return json.toBytes();
-    }
-    @Override
-    public example.Json to(Oid oid, byte[] value) {
-        return new example.Json(new String(value, UTF_8));
+suspend fun <T> CompletableFuture<T>.upon(): T {
+    return suspendCoroutine { continuation ->
+        whenComplete { r, th ->
+            if (th == null) {
+                continuation.resume(r)
+            } else {
+                continuation.resumeWithException(th)
+            }
+        }
     }
 }
-
-Db db = return new ConnectionPoolBuilder()
-    ...
-    .converters(new JsonConverter())
-    .build();
 ```
+then you will be able to write your business logic in a sync-like style like this:
+```java
+
+    suspend fun fetchSomeData(
+        userId: Long,
+        since: Instant,
+        till: Instant,
+        open: Boolean
+    ): List<SomeDatum> = postgresClient.query(
+        databaseAt, "Select * from some_table",
+        userId, since, till
+    ).upon()
+        .map(SomeDatum::of)
+        .filter { datum -> datum.closed || open }
+```
+This code is written in `Kotlin` and it operates on the results directly because `upon()` function turns a `CompleteableFuture` in a suspension point.
+With this trick you write your code like it would be synchronous, but it remains fully asynchronous and non-blocking! 
