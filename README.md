@@ -1,4 +1,4 @@
-# postgres-async-driver - Asynchronous PostgreSQL Java driver
+# pgAsync - Asynchronous PostgreSQL Java driver
 
 Postgres-async-driver is a non-blocking Java driver for PostgreSQL. The driver supports connection pooling, prepared statements, transactions, all standard SQL types and custom column types. 
 

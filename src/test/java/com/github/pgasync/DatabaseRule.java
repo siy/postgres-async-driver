@@ -92,18 +92,6 @@ class DatabaseRule extends ExternalResource {
     }
 
     Collection<ResultSet> script(String sql) {
-        pool().getConnection().thenAccept(connection ->
-                connection.begin().thenAccept(transaction ->
-                        transaction.completeQuery("SELECT COUNT(*) cnt FROM CP_TEST")
-                                .thenApply(resultSet -> {
-                                    Row resultItem = resultSet.at(0);
-                                    return resultItem.getInt("cnt");
-                                })
-                                .thenApply(count -> transaction.completeQuery("Insert into cp_log (cnt) Values($1)", count))
-                                .thenCompose(Function.identity())
-                                .thenAccept(insertResult -> transaction.commit())
-                )
-        );
         return block(pool().completeScript(sql));
     }
 
